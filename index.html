@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paul-David Ephraïm Kinimo — Software Engineer · Full-Stack & AI</title>
+<meta name="description" content="Portfolio of Paul-David Ephraïm Kinimo: full-stack and AI systems developer. Komaverse, Flutter Showcase, free-tts, Nafema, Orbita.">
+<meta property="og:title" content="Paul-David Ephraïm Kinimo — Software Engineer">
+<meta property="og:description" content="Full-stack & AI systems developer. Selected work, live demos and open source.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ff6b35'/%3E%3Ctext x='32' y='42' font-family='Arial' font-size='28' font-weight='bold' text-anchor='middle' fill='white'%3EPK%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<nav class="nav" id="nav">
+  <a class="brand" href="#top"><span class="brand-mark">PK</span><span class="brand-name">paul-david<span class="dim">.dev</span></span></a>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#projects">Projects</a>
+    <a href="#github">GitHub</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a class="btn btn-small" href="https://github.com/Davesoul" target="_blank" rel="noopener">
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    GitHub
+  </a>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="scene"></canvas>
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="eyebrow reveal"><span class="pulse"></span>Final-year BSc · UCLan · Graduating July 2026</p>
+    <h1 class="reveal">Paul-David Ephraïm<br><span class="grad">KINIMO</span></h1>
+    <p class="typed-line reveal">I build <span id="typed" class="typed"></span><span class="caret">▍</span></p>
+    <p class="lede reveal">Full-stack &amp; AI systems developer shipping production web apps, intelligent assistants and 3D web experiences — from a national school platform to an AI anime studio.</p>
+    <div class="hero-cta reveal">
+      <a class="btn btn-primary" href="#projects">Explore projects ↓</a>
+      <a class="btn btn-ghost" href="https://github.com/Davesoul" target="_blank" rel="noopener">GitHub profile ↗</a>
+    </div>
+    <div class="stats reveal">
+      <div class="stat"><b data-count="11">0</b><span>public repos</span></div>
+      <div class="stat"><b data-count="6">0</b><span>featured builds</span></div>
+      <div class="stat"><b data-count="3">0</b><span>live experiences</span></div>
+    </div>
+  </div>
+  <div class="scroll-hint">scroll<span></span></div>
+</header>
+
+<div class="marquee"><div class="marquee-track" id="marqueeTrack">
+  <span>Python</span><span>FastAPI</span><span>Flutter</span><span>TypeScript</span><span>PostgreSQL</span><span>Three.js</span><span>LLM Agents</span><span>RAG</span><span>Docker</span><span>React</span><span>Tauri</span><span>PyTorch</span>
+</div></div>
+
+<section class="section" id="about">
+  <div class="wrap about-grid">
+    <div class="about-photo reveal">
+      <img src="assets/portrait.jpg" alt="Portrait of Paul-David Ephraïm Kinimo">
+      <div class="photo-ring"></div>
+    </div>
+    <div>
+      <p class="kicker reveal">01 — About</p>
+      <h2 class="reveal">Business computing,<br>engineered end-to-end.</h2>
+      <p class="reveal"><strong>BSc (Hons) Business Computing and Information Systems</strong>, University of Central Lancashire — <strong>Upper Second Class (2:1)</strong>, expected July 2026. My degree lives where business needs meet systems design, and my projects live there too: requirements → architecture → database → shipped product.</p>
+      <ul class="checklist reveal">
+        <li>Developer on a <strong>national-scale platform</strong> (school management, payments, RFID/QR)</li>
+        <li><strong>Hackathon-built AI studio</strong> with vision models, video export and voice agents</li>
+        <li><strong>Offline-first AI tools</strong> — neural TTS, RAG assistants, multi-LLM orchestration</li>
+        <li><strong>3D web enthusiast</strong> — WebGL solar systems, shader backgrounds (like this page)</li>
+      </ul>
+      <div class="chip-row reveal">
+        <span class="chip">Requirements analysis</span><span class="chip">Systems design</span><span class="chip">Database modelling</span><span class="chip">SDLC / Agile</span><span class="chip">Technical docs</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="skills">
+  <div class="wrap">
+    <p class="kicker reveal">02 — Stack</p>
+    <h2 class="reveal">Tools I ship with.</h2>
+    <div class="skills-grid">
+      <div class="skill-card reveal"><h3>Backend &amp; Data</h3><p>FastAPI · Flask · REST · PostgreSQL · SQLAlchemy · Alembic · JWT / RBAC · Docker</p><div class="bar"><i style="width:92%"></i></div></div>
+      <div class="skill-card reveal"><h3>Mobile &amp; Frontend</h3><p>Flutter + Riverpod · Dart · React / Vite · TypeScript · Tauri</p><div class="bar"><i style="width:85%"></i></div></div>
+      <div class="skill-card reveal"><h3>AI Systems</h3><p>LLM integration · RAG · Agents / MCP · Prompt eng. · STT / TTS · LangChain · Ollama</p><div class="bar"><i style="width:88%"></i></div></div>
+      <div class="skill-card reveal"><h3>Languages &amp; 3D</h3><p>Python · SQL · C++ · PHP · HTML/CSS · JavaScript · WebGL · Three.js</p><div class="bar"><i style="width:80%"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="projects">
+  <div class="wrap">
+    <p class="kicker reveal">03 — Selected work</p>
+    <h2 class="reveal">Featured builds.</h2>
+    <p class="sub reveal">Six projects that show what I can do — live demos where they exist, source code always.</p>
+    <div class="proj-grid">
+
+      <article class="card span2 reveal" data-tilt>
+        <div class="thumb"><img src="assets/komaverse.png" alt="Komaverse render timeline screenshot" loading="lazy"><span class="badge">Cerebral Valley × Meta hackathon</span></div>
+        <div class="card-body">
+          <h3>Komaverse <span class="arrow">— AI anime studio</span></h3>
+          <p>Turn manga pages into animated MP4 in the browser: SAM/YOLO panel detection, multi-lane timeline with frame-accurate export, Tauri desktop build, and an in-app AI agent with per-frame references, web research and voice.</p>
+          <div class="tags"><span>React</span><span>FastAPI</span><span>Meta Muse</span><span>Tauri</span></div>
+          <div class="links"><a href="https://github.com/Davesoul/Komaverse" target="_blank" rel="noopener">Source ↗</a></div>
+        </div>
+      </article>
+
+      <article class="card reveal" data-tilt>
+        <div class="thumb"><img src="assets/flutter-showcase.png" alt="Flutter Showcase live demo screenshot" loading="lazy"><span class="badge live">● Live demo</span></div>
+        <div class="card-body">
+          <h3>Flutter Showcase</h3>
+          <p>Pure-frontend component library: 10 sections — theming studio, dashboard, charts, storefront, music, chat, motion lab. Riverpod state, Material 3, zero backend.</p>
+          <div class="tags"><span>Flutter</span><span>Dart</span><span>Riverpod</span></div>
+          <div class="links"><a href="https://davesoul.github.io/Flutter-showcase/" target="_blank" rel="noopener">Live ↗</a><a href="https://github.com/Davesoul/Flutter-showcase" target="_blank" rel="noopener">Source ↗</a></div>
+        </div>
+      </article>
+
+      <article class="card reveal" data-tilt>
+        <div class="thumb thumb-tts"><div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="card-body">
+          <h3>free-tts</h3>
+          <p>Offline neural text-to-speech engine: Kokoro + Coqui XTTS voice cloning, Flask web UI, word-level SRT captions via faster-whisper. Fully free, Apache 2.0.</p>
+          <div class="tags"><span>Python</span><span>PyTorch</span><span>Flask</span></div>
+          <div class="links"><a href="https://github.com/Davesoul/free-tts" target="_blank" rel="noopener">Source ↗</a></div>
+        </div>
+      </article>
+
+      <article class="card reveal" data-tilt>
+        <div class="thumb thumb-ai"><div class="orb" aria-hidden="true"></div></div>
+        <div class="card-body">
+          <h3>AI Corporate Intelligence Hub <span class="mini">final-year project</span></h3>
+          <p>Corporate AI assistant: streaming chat, RAG document search, MCP tool-calling over company data, web + news search, email and voice interaction.</p>
+          <div class="tags"><span>FastAPI</span><span>MCP</span><span>RAG</span></div>
+          <div class="links"><a href="https://github.com/Davesoul/AI-Corporate-Intelligence-Hub" target="_blank" rel="noopener">Source ↗</a></div>
+        </div>
+      </article>
+
+      <article class="card reveal" data-tilt>
+        <div class="thumb thumb-orbita"><div class="planet" aria-hidden="true"></div><div class="orbit-ring" aria-hidden="true"></div></div>
+        <div class="card-body">
+          <h3>Orbita <span class="mini">3D / WebGL</span></h3>
+          <p>Interactive 3D solar system in the browser: realistic sun rendering, orbits, planet selection, time-speed control and an in-game HUD. Pure WebGL.</p>
+          <div class="tags"><span>JavaScript</span><span>WebGL</span></div>
+          <div class="links"><a href="https://github.com/Davesoul/Orbita" target="_blank" rel="noopener">Source ↗</a></div>
+        </div>
+      </article>
+
+      <article class="card reveal" data-tilt>
+        <div class="thumb thumb-nafema"><div class="grid-lines" aria-hidden="true"></div><span class="badge live">● Live</span></div>
+        <div class="card-body">
+          <h3>Nafema <span class="arrow">— school platform</span></h3>
+          <p>National school-management platform: one shared family account across schools — enrolment, RFID/QR attendance, grades &amp; PDF report cards, Mobile Money payments.</p>
+          <div class="tags"><span>FastAPI</span><span>PostgreSQL</span><span>Flutter</span></div>
+          <div class="links"><a href="https://www.nafema.ci" target="_blank" rel="noopener">Live ↗</a></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="github">
+  <div class="wrap">
+    <p class="kicker reveal">04 — GitHub</p>
+    <h2 class="reveal">Everything, live from GitHub.</h2>
+    <p class="sub reveal">This grid is fetched from the GitHub API in real time — what you see is the actual state of <a class="inline" href="https://github.com/Davesoul" target="_blank" rel="noopener">@Davesoul</a>.</p>
+    <div class="repo-grid" id="repoGrid"><p class="loading">Loading repositories…</p></div>
+  </div>
+</section>
+
+<section class="section" id="contact">
+  <div class="wrap contact-box reveal">
+    <p class="kicker">05 — Contact</p>
+    <h2>Let's build something.</h2>
+    <p>Open to graduate / junior software roles, freelance builds and hackathons. Based in Abidjan, working worldwide.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="mailto:davekinimo77@gmail.com">davekinimo77@gmail.com</a>
+      <a class="btn btn-ghost" href="https://www.linkedin.com/in/dave-kinimo-028955311/" target="_blank" rel="noopener">LinkedIn ↗</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>© <span id="year">2026</span> Paul-David Ephraïm Kinimo</span>
+    <span>Built with Three.js · Hosted on GitHub Pages</span>
+  </div>
+</footer>
+
+<script src="main.js" defer></script>
+<script type="module" src="hero.js"></script>
+</body>
+</html>

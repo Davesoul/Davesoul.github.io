@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dave Kinimo | Engineer. Creator. Builder.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600;800&family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<nav id="navbar">
+  <div class="logo">DK<span class="dot">.</span></div>
+  <ul id="nav-links">
+    <li><a href="#hero" class="active">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button id="menu-btn" aria-label="Menu">☰</button>
+</nav>
+
+<main>
+  <section id="hero">
+    <div class="hero-content">
+      <p class="hero-tag">Hello, I'm</p>
+      <h1 class="hero-name">
+        Dave <span class="gradient-text">Kinimo</span>
+      </h1>
+      <p class="hero-subtitle">Software Engineer — AI Systems — Full-Stack Creator</p>
+      <div class="hero-actions">
+        <a href="#projects" class="btn primary">View Work</a>
+        <a href="#contact" class="btn ghost">Get In Touch</a>
+      </div>
+      <div class="scroll-hint">
+        <span>Scroll</span>
+        <div class="mouse"><div class="wheel"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="section-header">
+      <span class="section-tag">01</span>
+      <h2>About Me</h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-visual">
+        <div class="stat-card">
+          <div class="stat-num">4+</div>
+          <div class="stat-label">Years Coding</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">15+</div>
+          <div class="stat-label">Projects Built</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">2</div>
+          <div class="stat-label">Continent Roots</div>
+        </div>
+      </div>
+      <div class="about-text">
+        <p>
+          I'm a full-stack software engineer and AI systems developer based in Côte d'Ivoire,
+          blending African pragmatism with Japanese precision. I build products that are
+          technically solid and culturally resonant — from national ed-tech platforms to
+          real-time AI assistants.
+        </p>
+        <p>
+          Currently focused on large-scale ed-tech, secure payment integrations, and agentic AI.
+          I believe the best systems feel invisible: fast, reliable, and quietly intelligent.
+          My long-term goal is to build intelligent robotics systems that solve real-world problems.
+        </p>
+        <p>
+          When I'm not coding, I'm probably watching anime, reading manga, or thinking about
+          game mechanics.
+        </p>
+        <div class="quick-links">
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/dave-kinimo-028955311/" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:davekinimo77@gmail.com">Email</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects">
+    <div class="section-header">
+      <span class="section-tag">02</span>
+      <h2>Selected Projects</h2>
+    </div>
+    <div class="project-grid">
+      <article class="project-card">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="project-icon">🏫</span>
+          <div>
+            <h3>Nafema Ecosystem</h3>
+            <p class="project-meta">Full-stack • EdTech • Production</p>
+          </div>
+        </div>
+        <p class="project-desc">Unified national school management platform with JWT auth, real-time attendance (RFID/QR), grade management, and multi-gateway payments (CinetPay, Flutterwave). FastAPI + Flutter • 46-table PostgreSQL schema.</p>
+        <div class="project-tags">
+          <span>Python</span><span>FastAPI</span><span>Flutter</span><span>PostgreSQL</span><span>Docker</span>
+        </div>
+        <div class="card-actions">
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small">Source</a>
+          <a href="https://nafema-backend-rm33.onrender.com/docs" target="_blank" rel="noopener" class="btn small ghost">API Docs</a>
+        </div>
+      </article>
+
+      <article class="project-card">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="project-icon">🤖</span>
+          <div>
+            <h3>AI Agent Systems</h3>
+            <p class="project-meta">AI Engineering • LLMs • Voice</p>
+          </div>
+        </div>
+        <p class="project-desc">Modular AI assistant integrating multiple LLM providers with speech-to-text, text-to-speech, and tool-calling. Built with LangChain/LangGraph ReAct pipelines, live data-channel routing, and resilient reconnect logic.</p>
+        <div class="project-tags">
+          <span>Python</span><span>LangChain</span><span>LiveKit</span><span>OpenAI</span><span>Ollama</span>
+        </div>
+        <div class="card-actions">
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small">Source</a>
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small ghost">Docs</a>
+        </div>
+      </article>
+
+      <article class="project-card">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="project-icon">📄</span>
+          <div>
+            <h3>SaaS Tools Suite</h3>
+            <p class="project-meta">Web Apps • APIs • Monetization</p>
+          </div>
+        </div>
+        <p class="project-desc">Suite of browser-based productivity tools (PDF tools, image compressor, QR generator) with freemium monetization strategy. Live deployments on Vercel / Render ready.</p>
+        <div class="project-tags">
+          <span>JavaScript</span><span>HTML</span><span>Stripe</span><span>Vercel</span>
+        </div>
+        <div class="card-actions">
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small">Source</a>
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small ghost">Live</a>
+        </div>
+      </article>
+
+      <article class="project-card">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="project-icon">💰</span>
+          <div>
+            <h3>Currency Exchange App</h3>
+            <p class="project-meta">Desktop • Finance • Flutter</p>
+          </div>
+        </div>
+        <p class="project-desc">Desktop currency exchange management tool with multi-currency transaction processing, live exchange rates, relational database backend, and financial reporting.</p>
+        <div class="project-tags">
+          <span>Flutter</span><span>SQL</span><span>Desktop</span><span>API</span>
+        </div>
+        <div class="card-actions">
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small">Source</a>
+        </div>
+      </article>
+
+      <article class="project-card">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="project-icon">🧠</span>
+          <div>
+            <h3>Mark Suite</h3>
+            <p class="project-meta">UI • Dashboard • Interactive</p>
+          </div>
+        </div>
+        <p class="project-desc">Iron Man–inspired sci-fi interface with real-time metrics, arc reactor visualization, weapons status panel, and a JARVIS-style AI command terminal — just for fun and frontend craft.</p>
+        <div class="project-tags">
+          <span>HTML</span><span>CSS</span><span>JS</span><span>Canvas</span>
+        </div>
+        <div class="card-actions">
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small">Source</a>
+          <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="btn small ghost">Live</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="section-header">
+      <span class="section-tag">03</span>
+      <h2>Skills & Tools</h2>
+    </div>
+    <div class="skills-container">
+      <div class="skill-group">
+        <h4>Languages</h4>
+        <div class="skill-list">
+          <div class="skill-pill">Python</div>
+          <div class="skill-pill">JavaScript</div>
+          <div class="skill-pill">PHP</div>
+          <div class="skill-pill">SQL</div>
+          <div class="skill-pill">C++</div>
+          <div class="skill-pill">Dart</div>
+          <div class="skill-pill">HTML/CSS</div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h4>Backend & AI</h4>
+        <div class="skill-list">
+          <div class="skill-pill">FastAPI</div>
+          <div class="skill-pill">Flask</div>
+          <div class="skill-pill">LangChain</div>
+          <div class="skill-pill">LLM APIs</div>
+          <div class="skill-pill">Prompt Engineering</div>
+          <div class="skill-pill">AI Agents</div>
+          <div class="skill-pill">REST APIs</div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h4>Frontend & Mobile</h4>
+        <div class="skill-list">
+          <div class="skill-pill">Flutter</div>
+          <div class="skill-pill">React</div>
+          <div class="skill-pill">Three.js</div>
+          <div class="skill-pill">HTML/CSS</div>
+          <div class="skill-pill">WebSockets</div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h4>DevOps & Tools</h4>
+        <div class="skill-list">
+          <div class="skill-pill">Docker</div>
+          <div class="skill-pill">GitHub Actions</div>
+          <div class="skill-pill">Linux</div>
+          <div class="skill-pill">PostgreSQL</div>
+          <div class="skill-pill">Redis</div>
+          <div class="skill-pill">Nginx</div>
+        </div>
+      </div>
+      <div class="interest-group">
+        <h4>Interests</h4>
+        <div class="skill-list">
+          <div class="skill-pill outline">🤖 Robotics</div>
+          <div class="skill-pill outline">🎮 Game Dev</div>
+          <div class="skill-pill outline">🎌 Anime / Manga</div>
+          <div class="skill-pill outline">🇯🇵 Japanese Culture</div>
+          <div class="skill-pill outline">🌍 African Tech</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="section-header">
+      <span class="section-tag">04</span>
+      <h2>Get In Touch</h2>
+    </div>
+    <div class="contact-card">
+      <p class="contact-lead">
+        I'm currently open to roles, collaborations, and interesting problems.
+        Whether you want to build something, talk LLMs, or just discuss the latest manga chapter —
+        my inbox is open.
+      </p>
+      <div class="contact-grid">
+        <a href="mailto:davekinimo77@gmail.com" class="contact-item">
+          <span class="contact-icon">✉</span>
+          <span>davekinimo77@gmail.com</span>
+        </a>
+        <a href="https://github.com/Davesoul" target="_blank" rel="noopener" class="contact-item">
+          <span class="contact-icon">⌨</span>
+          <span>github.com/Davesoul</span>
+        </a>
+        <a href="https://www.linkedin.com/in/dave-kinimo-028955311/" target="_blank" rel="noopener" class="contact-item">
+          <span class="contact-icon">◉</span>
+          <span>linkedin.com/in/dave-kinimo</span>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>© <span id="year">2025</span> Dave Kinimo. Built with Three.js, vanilla JS, and curiosity.</p>
+  <p class="footer-tag">🌍 🇨🇮 — Inspired by Tokyo nights & Abidjan rhythms.</p>
+</footer>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
