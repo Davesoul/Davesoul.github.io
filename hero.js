@@ -211,7 +211,7 @@ const blob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), new THREE.MeshBa
 blob.rotation.x = -Math.PI / 2;
 blob.position.y = 0.05;
 char.add(blob);
-char.position.set(11, 0, 0);
+char.position.set(11, 0, -6);
 char.scale.set(1.6, 1.6, 1.6);
 const marker = part(new THREE.OctahedronGeometry(0.2, 0), 0xffd9a0, 0, 2.9, 0);
 char.add(marker);
