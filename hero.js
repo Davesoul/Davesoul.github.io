@@ -24,6 +24,10 @@ renderer.setSize(innerWidth, innerHeight);
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x06080d, 0.014);
+scene.add(new THREE.HemisphereLight(0xdfeaff, 0x223349, 1.05));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+dirLight.position.set(18, 26, 12);
+scene.add(dirLight);
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 400);
 
 const CITY = { x: 11, z: -2 };          // city center (right of the hero text)
@@ -229,6 +233,27 @@ charGlow.scale.set(2.2, 2.2, 1);
 charGlow.position.y = 1.1;
 char.add(charGlow);
 scene.add(char);
+/* real character model (graceful fallback to the primitive robot) */
+let modelObj = null, primitiveMode = true;
+try {
+  if (THREE.FBXLoader) {
+    new THREE.FBXLoader().load('assets/char.fbx', (model) => {
+      const bb = new THREE.Box3().setFromObject(model);
+      const sz = bb.getSize(new THREE.Vector3());
+      model.scale.setScalar((3.4 / char.scale.x) / Math.max(sz.x, sz.y, sz.z));
+      const b2 = new THREE.Box3().setFromObject(model);
+      model.position.x -= (b2.min.x + b2.max.x) / 2;
+      model.position.z -= (b2.min.z + b2.max.z) / 2;
+      model.position.y -= b2.min.y;
+      modelObj = model;
+      modelObj.userData.baseY = model.position.y;
+      bodyG.visible = false;
+      char.add(model);
+      primitiveMode = false;
+      canvas.dataset.char = 'fbx';
+    }, undefined, () => { canvas.dataset.char = 'fbx-fallback'; });
+  }
+} catch (e) { canvas.dataset.char = 'fbx-fallback'; }
 const walker = {
   angle: 0, phase: 0, y: 0, vy: 0,
   target: null, tourIdx: 0, moving: false,
@@ -322,6 +347,7 @@ addEventListener('scroll', () => { scrollF = Math.min(scrollY / innerHeight, 1);
 const clock = new THREE.Clock();
 let frames = 0;
 function step(dt, t) {
+  const at = reduced ? 0.6 : t;   /* frozen ambience when the user prefers reduced motion */
   let vx = 0, vz = 0;
   const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
   const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
@@ -331,7 +357,7 @@ function step(dt, t) {
     vz = fz * fwd - fx * strafe;
     walker.target = null;
   } else {
-    if (!walker.target) {
+    if (!walker.target && !reduced) {
       const wp = walker.tour[walker.tourIdx % walker.tour.length];
       walker.target = { x: wp[0], z: wp[1], tour: true };
     }
@@ -360,21 +386,25 @@ function step(dt, t) {
   }
   char.rotation.y = walker.angle;
   const sw = moving ? Math.sin(walker.phase) * 0.6 : 0;
-  legL.rotation.x = sw; legR.rotation.x = -sw;
-  armL.rotation.x = -sw * 0.8; armR.rotation.x = sw * 0.8;
+  if (primitiveMode) {
+    legL.rotation.x = sw; legR.rotation.x = -sw;
+    armL.rotation.x = -sw * 0.8; armR.rotation.x = sw * 0.8;
+  }
   if (keys.Space && walker.y === 0) walker.vy = 5;
   if (walker.y > 0 || walker.vy !== 0) {
     walker.vy -= 13 * dt;
     walker.y += walker.vy * dt;
     if (walker.y <= 0) { walker.y = 0; walker.vy = 0; }
   }
-  bodyG.position.y = walker.y + (moving ? Math.abs(Math.sin(walker.phase)) * 0.07 : 0);
+  const bobY = walker.y + (moving ? Math.abs(Math.sin(walker.phase)) * 0.07 : 0);
+  bodyG.position.y = bobY;
   bodyG.rotation.x = moving ? 0.09 : 0;
+  if (modelObj) { modelObj.position.y = modelObj.userData.baseY + bobY; modelObj.rotation.x = moving ? 0.09 : 0; }
   marker.rotation.y += dt * 2;
   marker.position.y = 2.9 + Math.sin(t * 3) * 0.15;
   towers.forEach(t => {
-    t.beacon.material.opacity = 0.55 + 0.4 * Math.sin(t * 2.4 + t.phase);
-    if (t.roofSpin) t.roofSpin.rotation.z += dt * 0.8;
+    t.beacon.material.opacity = 0.55 + 0.4 * Math.sin(at * 2.4 + t.phase);
+    if (t.roofSpin && !reduced) t.roofSpin.rotation.z += dt * 0.8;
   });
   ripples.forEach(r => {
     if (!r.mesh.visible) return;
@@ -384,7 +414,7 @@ function step(dt, t) {
     r.mesh.scale.set(s, s, 1);
     r.mesh.material.opacity = 0.8 * (1 - r.t);
   });
-  scene.userData.stars.rotation.y = t * 0.008;
+  scene.userData.stars.rotation.y = at * 0.008;
 }
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -392,7 +422,7 @@ function frame() {
   frames++;
   if (frames % 30 === 0) canvas.dataset.frames = String(frames);
   const now = perfNow();
-  if (now - lastOrbit > 8) theta += dt * 0.05;
+  if (now - lastOrbit > 8 && !reduced) theta += dt * 0.05;
   camera.position.set(
     CAM_TARGET.x + radius * Math.sin(phi) * Math.sin(theta),
     CAM_TARGET.y + radius * Math.cos(phi),
@@ -402,19 +432,9 @@ function frame() {
   canvas.style.opacity = String(1 - scrollF * 0.85);
   step(dt, t);
   renderer.render(scene, camera);
-  if (!reduced) requestAnimationFrame(frame);
+  requestAnimationFrame(frame);
 }
-if (reduced) {
-  /* motion-sensitive users still get the full city, frozen as one static frame */
-  try {
-    step(0, 0.6);
-    renderer.render(scene, camera);
-  } catch (e2) {
-    canvas.style.display = 'none';
-  }
-} else {
-  frame();
-}
+frame();
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
