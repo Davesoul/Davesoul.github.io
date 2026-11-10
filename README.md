@@ -44,5 +44,8 @@ assets/             portrait, komaverse + flutter-showcase screenshots
 
 - The **GitHub section** fetches `api.github.com/users/Davesoul/repos` live and
   falls back to a cached list if the API is unreachable or rate-limited.
-- The hero needs internet for the Three.js CDN + Google Fonts; everything else
-  (including images) is local.
+- The hero needs internet for Google Fonts; everything else
+  (including images, video, Three.js) is local.
+- **Hero controls:** drag to orbit · click a tower to visit it ·
+  click the ground to send the walker there · `WASD` to walk · `Space` to jump.
+  The walker auto-tours the plaza when idle.

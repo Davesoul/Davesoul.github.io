@@ -75,7 +75,6 @@ if (matchMedia('(pointer:fine)').matches) {
 
 /* ===== live GitHub repos, with baked-in fallback ===== */
 const FALLBACK = [
-  { name: 'Komaverse', desc: 'Browser anime studio: scan, detect, animate, export.', lang: 'Python', stars: 1, url: 'https://github.com/Davesoul/Komaverse' },
   { name: 'AI-Corporate-Intelligence-Hub', desc: 'AI-powered corporate assistant built with FastAPI and MCP.', lang: 'Python', stars: 0, url: 'https://github.com/Davesoul/AI-Corporate-Intelligence-Hub' },
   { name: 'free-tts', desc: 'free text-to-speech engine.', lang: 'Python', stars: 0, url: 'https://github.com/Davesoul/free-tts' },
   { name: 'Flutter-showcase', desc: 'Pure-frontend component library, live on GitHub Pages.', lang: 'Dart', stars: 0, url: 'https://github.com/Davesoul/Flutter-showcase' },

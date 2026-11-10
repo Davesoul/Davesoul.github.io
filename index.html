@@ -50,6 +50,7 @@
     </div>
   </div>
   <div class="scroll-hint">scroll<span></span></div>
+  <div class="hero-hint">drag to look around · click a tower to visit · WASD to walk</div>
 </header>
 
 <div class="marquee"><div class="marquee-track" id="marqueeTrack">
@@ -58,7 +59,7 @@
 
 <section class="section" id="about">
   <div class="wrap about-grid">
-    <div class="about-photo reveal">
+    <div class="about-photo reveal" data-tilt>
       <img src="assets/portrait.jpg" alt="Portrait of Paul-David Ephraïm Kinimo">
       <div class="photo-ring"></div>
     </div>
@@ -100,12 +101,12 @@
     <div class="proj-grid">
 
       <article class="card span2 reveal" data-tilt>
-        <div class="thumb"><img src="assets/komaverse.png" alt="Komaverse render timeline screenshot" loading="lazy"><span class="badge">Cerebral Valley × Meta hackathon</span></div>
+        <div class="thumb"><video src="assets/komaverse-demo.mp4" poster="assets/komaverse.png" autoplay muted loop playsinline preload="metadata"></video><span class="badge">Cerebral Valley × Meta hackathon</span></div>
         <div class="card-body">
           <h3>Komaverse <span class="arrow">— AI anime studio</span></h3>
           <p>Turn manga pages into animated MP4 in the browser: SAM/YOLO panel detection, multi-lane timeline with frame-accurate export, Tauri desktop build, and an in-app AI agent with per-frame references, web research and voice.</p>
           <div class="tags"><span>React</span><span>FastAPI</span><span>Meta Muse</span><span>Tauri</span></div>
-          <div class="links"><a href="https://github.com/Davesoul/Komaverse" target="_blank" rel="noopener">Source ↗</a></div>
+          <div class="links"><a href="https://youtu.be/npx_7S3tkvU" target="_blank" rel="noopener">Watch demo ↗</a></div>
         </div>
       </article>
 
