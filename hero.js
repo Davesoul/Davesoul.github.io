@@ -405,7 +405,13 @@ function frame() {
   if (!reduced) requestAnimationFrame(frame);
 }
 if (reduced) {
-  canvas.style.display = 'none';
+  /* motion-sensitive users still get the full city, frozen as one static frame */
+  try {
+    step(0, 0.6);
+    renderer.render(scene, camera);
+  } catch (e2) {
+    canvas.style.display = 'none';
+  }
 } else {
   frame();
 }
