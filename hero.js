@@ -211,8 +211,10 @@ const blob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), new THREE.MeshBa
 blob.rotation.x = -Math.PI / 2;
 blob.position.y = 0.05;
 char.add(blob);
-char.position.set(12, 0, 1);
-char.scale.set(1.35, 1.35, 1.35);
+char.position.set(11, 0, 0);
+char.scale.set(1.6, 1.6, 1.6);
+const marker = part(new THREE.OctahedronGeometry(0.2, 0), 0xffd9a0, 0, 2.9, 0);
+char.add(marker);
 scene.add(char);
 const walker = {
   angle: 0, phase: 0, y: 0, vy: 0,
@@ -354,6 +356,8 @@ function step(dt, t) {
   }
   bodyG.position.y = walker.y + (moving ? Math.abs(Math.sin(walker.phase)) * 0.07 : 0);
   bodyG.rotation.x = moving ? 0.09 : 0;
+  marker.rotation.y += dt * 2;
+  marker.position.y = 2.9 + Math.sin(t * 3) * 0.15;
   towers.forEach(t => {
     t.beacon.material.opacity = 0.55 + 0.4 * Math.sin(t * 2.4 + t.phase);
     if (t.roofSpin) t.roofSpin.rotation.z += dt * 0.8;
