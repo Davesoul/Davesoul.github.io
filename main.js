@@ -134,3 +134,10 @@ function toast(msg) {
 }
 
 loadRepos();
+
+/* touch devices: no keyboard, so explain tap-to-walk */
+(function touchHint() {
+  if (!matchMedia('(pointer:coarse)').matches) return;
+  const hint = document.querySelector('.hero-hint');
+  if (hint) hint.textContent = 'drag to look around · tap a tower to visit · tap the ground to walk him';
+})();

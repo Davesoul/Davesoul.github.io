@@ -66,7 +66,7 @@ a{color:inherit}
 @keyframes drop{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 .hero-hint{position:absolute;bottom:22px;right:28px;font-family:var(--font-m);font-size:11px;letter-spacing:1.5px;
   color:var(--faint);z-index:2;text-align:right}
-@media(max-width:900px){.hero-hint{display:none}}
+@media(max-width:900px){.hero-hint{bottom:12px;right:12px;left:12px;text-align:center;font-size:10px}}
 /* ---------- marquee ---------- */
 .marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;background:var(--bg2);padding:15px 0;position:relative;z-index:2}
 .marquee-track{display:flex;gap:46px;width:max-content;animation:scroll 26s linear infinite;font-family:var(--font-d);font-weight:600;

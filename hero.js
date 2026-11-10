@@ -129,7 +129,6 @@ const PROJECTS = [
   { name: 'FLUTTER',   color: '#7c5cff', h: 9,  x: 21,   z: -3.5, url: 'https://davesoul.github.io/Flutter-showcase/' },
   { name: 'FREE-TTS',  color: '#00c8b4', h: 7,  x: 17.5, z: 4,    url: 'https://github.com/Davesoul/free-tts' },
   { name: 'AI-HUB',    color: '#b48cff', h: 8,  x: 11,   z: 9,    url: 'https://github.com/Davesoul/AI-Corporate-Intelligence-Hub' },
-  { name: 'NAFEMA',    color: '#7dffb0', h: 6,  x: 6.5,  z: 7,    url: 'https://www.nafema.ci' },
   { name: 'ORBITA',    color: '#ff9a5c', h: 5,  x: 6,    z: -8,   url: 'https://github.com/Davesoul/Orbita' },
 ];
 const hitMeshes = [];
@@ -227,7 +226,7 @@ scene.add(char);
 const walker = {
   angle: 0, phase: 0, y: 0, vy: 0,
   target: null, tourIdx: 0, moving: false,
-  tour: [[17, 1], [18.5, -5], [12, -8.5], [6, -5], [5, 2.5], [9.5, 4.5]],
+  tour: [[17, 1], [18.5, -5], [12, -8.5], [5.5, -4.5], [5, 2.5], [9.5, 4.5]],
 };
 /* click ripple markers */
 const ripples = [];
@@ -247,7 +246,8 @@ function ripple(x, z) {
 /* ---------- input: drag-orbit, click, WASD ---------- */
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
-let theta = 0.85, phi = 1.02, radius = 27, lastOrbit = -10;
+let theta = 0.85, phi = 1.02, radius = fitRadius(), lastOrbit = -10;
+function fitRadius() { return innerWidth / innerHeight < 0.85 ? 37 : 27; }
 let downPos = null, dragging = false;
 const keys = {};
 addEventListener('keydown', (e) => {
@@ -407,4 +407,5 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  radius = fitRadius();
 });
