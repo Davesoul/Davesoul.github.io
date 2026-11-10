@@ -10,7 +10,13 @@ try {
   renderer.setClearColor(0x000000, 0);
   canvas.dataset.ctx = 'ok';
 } catch (e) {
-  canvas.dataset.ctx = 'fail:' + String(e && e.message || e).slice(0, 80);
+  canvas.dataset.ctx = 'fail';
+  var msg = document.getElementById('webglStatus');
+  if (msg) {
+    msg.hidden = false;
+    msg.textContent = '3D couldn\u2019t start here — enable \u201CUse graphics acceleration\u201D in your browser settings, or open this page in Chrome/Edge.';
+  }
+  canvas.style.display = 'none';
   throw e;
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
