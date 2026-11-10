@@ -1,5 +1,5 @@
 /* ===== HERO 3D SCENE — particles + ember core + orbit rings ===== */
-import * as THREE from 'three';
+/* global THREE — loaded via classic script vendor/three.min.js (works on file:// too) */
 
 const canvas = document.getElementById('scene');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches && !location.search.includes('motion=1');
