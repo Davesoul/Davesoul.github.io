@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 <div class="cursor-glow" id="cursorGlow"></div>
@@ -35,7 +35,7 @@
   <canvas id="scene"></canvas>
   <div class="hero-shade" aria-hidden="true"></div>
   <div class="hero-inner">
-    <p class="eyebrow reveal"><span class="pulse"></span>Final-year BSc · UCLan · Graduating July 2026</p>
+    <p class="eyebrow reveal"><span class="pulse"></span>BSc Graduate · UCLan · Upper Second Class (2:1)</p>
     <h1 class="reveal">Paul-David Ephraïm<br><span class="grad">KINIMO</span></h1>
     <p class="typed-line reveal">I build <span id="typed" class="typed"></span><span class="caret">▍</span></p>
     <p class="lede reveal">Full-stack &amp; AI systems developer shipping production web apps, intelligent assistants and 3D web experiences — from a national school platform to an AI anime studio.</p>
@@ -66,7 +66,7 @@
     <div>
       <p class="kicker reveal">01 — About</p>
       <h2 class="reveal">Business computing,<br>engineered end-to-end.</h2>
-      <p class="reveal"><strong>BSc (Hons) Business Computing and Information Systems</strong>, University of Central Lancashire — <strong>Upper Second Class (2:1)</strong>, expected July 2026. My degree lives where business needs meet systems design, and my projects live there too: requirements → architecture → database → shipped product.</p>
+      <p class="reveal"><strong>BSc (Hons) Business Computing and Information Systems</strong>, University of Central Lancashire — <strong>Upper Second Class (2:1)</strong>, graduated February 2026. My degree lives where business needs meet systems design, and my projects live there too: requirements → architecture → database → shipped product.</p>
       <ul class="checklist reveal">
         <li>Developer on a <strong>national-scale platform</strong> (school management, payments, RFID/QR)</li>
         <li><strong>Hackathon-built AI studio</strong> with vision models, video export and voice agents</li>
@@ -101,7 +101,7 @@
     <div class="proj-grid">
 
       <article class="card span2 reveal" data-tilt>
-        <div class="thumb"><video src="assets/komaverse-demo.mp4" poster="assets/komaverse.png" autoplay muted loop playsinline preload="metadata"></video><span class="badge">Cerebral Valley × Meta hackathon</span></div>
+        <div class="thumb video-embed"><iframe src="https://www.youtube-nocookie.com/embed/npx_7S3tkvU?rel=0" title="Komaverse — hackathon walkthrough" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><span class="badge">Cerebral Valley × Meta hackathon</span></div>
         <div class="card-body">
           <h3>Komaverse <span class="arrow">— AI anime studio</span></h3>
           <p>Turn manga pages into animated MP4 in the browser: SAM/YOLO panel detection, multi-lane timeline with frame-accurate export, Tauri desktop build, and an in-app AI agent with per-frame references, web research and voice.</p>
@@ -193,7 +193,7 @@
 </footer>
 
 <script src="vendor/three.min.js"></script>
-<script src="main.js" defer></script>
-<script src="hero.js" defer></script>
+<script src="main.js?v=3" defer></script>
+<script src="hero.js?v=3" defer></script>
 </body>
 </html>

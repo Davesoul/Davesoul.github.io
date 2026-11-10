@@ -211,10 +211,18 @@ const blob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), new THREE.MeshBa
 blob.rotation.x = -Math.PI / 2;
 blob.position.y = 0.05;
 char.add(blob);
-char.position.set(11, 0, -6);
-char.scale.set(1.6, 1.6, 1.6);
-const marker = part(new THREE.OctahedronGeometry(0.2, 0), 0xffd9a0, 0, 2.9, 0);
+char.position.set(13, 0, -8);
+char.scale.set(2.1, 2.1, 2.1);
+const marker = part(new THREE.OctahedronGeometry(0.2, 0), 0xffd9a0, 0, 2.2, 0);
 char.add(marker);
+const youTag = labelSprite('YOU', '#ffd9a0');
+youTag.scale.set(2.6, 0.65, 1);
+youTag.position.y = 2.75;
+char.add(youTag);
+const charGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0xff6b35, transparent: true, opacity: 0.32, depthWrite: false }));
+charGlow.scale.set(2.2, 2.2, 1);
+charGlow.position.y = 1.1;
+char.add(charGlow);
 scene.add(char);
 const walker = {
   angle: 0, phase: 0, y: 0, vy: 0,
