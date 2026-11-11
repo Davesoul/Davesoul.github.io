@@ -139,5 +139,5 @@ loadRepos();
 (function touchHint() {
   if (!matchMedia('(pointer:coarse)').matches) return;
   const hint = document.querySelector('.hero-hint');
-  if (hint) hint.textContent = 'drag to orbit · pinch to zoom · tap a tower · tap ground to walk him';
+  if (hint) hint.textContent = 'drag orbit · pinch zoom · tap towers · walk in doors, E enters';
 })();

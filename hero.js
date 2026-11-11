@@ -48,6 +48,13 @@ const dotTex = canvasTex(64, 64, (g) => {
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = grad; g.fillRect(0, 0, 64, 64);
 });
+const beamTex = canvasTex(32, 256, (g) => {
+  const grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.75, 'rgba(255,255,255,.85)');
+  grad.addColorStop(1, 'rgba(255,255,255,.9)');
+  g.fillStyle = grad; g.fillRect(0, 0, 32, 256);
+});
 function facadeTex(accent, litRatio) {
   return canvasTex(96, 192, (g) => {
     g.fillStyle = '#0a0f18'; g.fillRect(0, 0, 96, 192);
@@ -142,6 +149,7 @@ const PROJECTS = [
   { name: 'AI-HUB',    color: '#b48cff', h: 8,  x: 11,   z: 9,    url: 'https://github.com/Davesoul/AI-Corporate-Intelligence-Hub' },
   { name: 'ORBITA',    color: '#ff9a5c', h: 5,  x: 6,    z: -8,   url: 'https://github.com/Davesoul/Orbita' },
 ];
+const LS = innerWidth / innerHeight < 0.85 ? 0.75 : 1;   /* label/door scale on narrow screens */
 const hitMeshes = [];
 const towers = [];
 PROJECTS.forEach((p) => {
@@ -162,11 +170,49 @@ PROJECTS.forEach((p) => {
   beacon.position.y = p.h + 0.5;
   g.add(beacon);
   const label = labelSprite(p.name, p.color);
+  label.userData.base = { x: 5.4 * LS, y: 1.35 * LS };
+  label.scale.set(label.userData.base.x, label.userData.base.y, 1);
   label.position.y = p.h + 2.1;
   g.add(label);
   g.position.set(p.x, 0, p.z);
   scene.add(g);
   towers.push({ def: p, group: g, box, edges, label, beacon, phase: Math.random() * 6.28 });
+});
+/* glowing portal doors on the plaza-facing side of each tower */
+const doors = [];
+let activeDoor = null;
+const doorPrompt = document.getElementById('doorPrompt');
+function makeDoor(p) {
+  const toPlaza = new THREE.Vector3(CITY.x - p.x, 0, CITY.z - p.z).normalize();
+  const pos = new THREE.Vector3(p.x + toPlaza.x * 3.4, 0, p.z + toPlaza.z * 3.4);
+  const g = new THREE.Group();
+  const dw = 1.7 * LS, dh = 3.2 * LS;
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(dw + 1.0, dh + 1.0), new THREE.MeshBasicMaterial({ map: dotTex, color: new THREE.Color(p.color), transparent: true, opacity: 0.4, depthWrite: false, side: THREE.DoubleSide }));
+  glow.position.y = dh / 2;
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(dw, dh), new THREE.MeshBasicMaterial({ color: 0x11182a, side: THREE.DoubleSide }));
+  panel.position.y = dh / 2;
+  panel.userData.project = p;
+  const frame = new THREE.LineSegments(new THREE.EdgesGeometry(panel.geometry), new THREE.LineBasicMaterial({ color: new THREE.Color(p.color) }));
+  frame.position.y = dh / 2;
+  const step = new THREE.Mesh(new THREE.PlaneGeometry(dw + 0.7, 0.9), new THREE.MeshBasicMaterial({ color: new THREE.Color(p.color), transparent: true, opacity: 0.22 }));
+  step.rotation.x = -Math.PI / 2;
+  step.position.y = 0.05;
+  g.add(glow, panel, frame, step);
+  const beamMat = new THREE.MeshBasicMaterial({ map: beamTex, color: new THREE.Color(p.color), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const beam1 = new THREE.Mesh(new THREE.PlaneGeometry(0.7 * LS, 10), beamMat);
+  beam1.position.y = 5;
+  const beam2 = beam1.clone();
+  beam2.rotation.y = Math.PI / 2;
+  g.add(beam1, beam2);
+  g.position.copy(pos);
+  g.lookAt(pos.x + toPlaza.x, 0, pos.z + toPlaza.z);
+  scene.add(g);
+  hitMeshes.push(panel);
+  doors.push({ def: p, group: g, pos, glow });
+}
+PROJECTS.forEach(makeDoor);
+doorPrompt.addEventListener('click', () => {
+  if (activeDoor) window.open(activeDoor.def.url, '_blank', 'noopener');
 });
 /* Orbita gets a tiny ringed planet on its roof */
 (function orbitaRoof() {
@@ -224,7 +270,7 @@ char.add(blob);
 const marker = part(new THREE.OctahedronGeometry(0.2, 0), 0xffd9a0, 0, 2.2, 0);
 char.add(marker);
 const youTag = labelSprite('YOU', '#ffd9a0');
-youTag.scale.set(2.6, 0.65, 1);
+youTag.scale.set(2.6 * LS, 0.65 * LS, 1);
 youTag.position.y = 2.75;
 char.add(youTag);
 const charGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0xff6b35, transparent: true, opacity: 0.32, depthWrite: false }));
@@ -236,6 +282,7 @@ char.scale.set(2.1, 2.1, 2.1);
 scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
+let animMixer = null, idleAction = null, runAction = null, jumpAction = null, activeAnim = null, animK = 1;
 try {
   if (THREE.FBXLoader) {
     new THREE.FBXLoader().load('assets/char.fbx', (model) => {
@@ -246,6 +293,39 @@ try {
       model.position.x -= (b2.min.x + b2.max.x) / 2;
       model.position.z -= (b2.min.z + b2.max.z) / 2;
       model.position.y -= b2.min.y;
+      const SKIN = 0x6e452b, HAIR = 0x17110c, DARKC = 0x1a1d24, EYE = 0xf0ece4;
+      model.traverse((o) => {
+        if (o.isMesh) {
+          o.material = o.material.clone();
+          const n = o.name || '';
+          if (/Head|Hands|Legs/.test(n)) o.material.color.set(SKIN);
+          else if (/Hair/.test(n)) o.material.color.set(HAIR);
+          else if (/Shoes/.test(n)) o.material.color.set(DARKC);
+          else if (/^Eyes$/.test(n)) o.material.color.set(EYE);
+          else if (/Eyelash|Eyebrow/.test(n)) o.material.color.set(HAIR);
+          o.material.needsUpdate = true;
+        }
+      });
+      let thigh = null;
+      model.traverse((o) => { if (o.isBone && (o.name === 'thighL' || o.name === 'thighR') && !thigh) thigh = o; });
+      const hipsY = thigh && thigh.parent ? Math.abs(thigh.parent.position.y) : 76;
+      animK = hipsY / 76;
+      animMixer = new THREE.AnimationMixer(model);
+      activeAnim = null;
+      const loadClip = (url, loop) => {
+        new THREE.FBXLoader().load(url, (anim) => {
+          const clip = anim.animations && anim.animations[0];
+          if (!clip) return;
+          const action = animMixer.clipAction(retargetClip(clip, animK));
+          if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
+          if (/idle/.test(url)) idleAction = action;
+          else if (/run/.test(url)) runAction = action;
+          else jumpAction = action;
+        }, undefined, () => {});
+      };
+      loadClip('assets/anim-idle.fbx', true);
+      loadClip('assets/anim-run.fbx', true);
+      loadClip('assets/anim-jump.fbx', false);
       modelObj = model;
       modelObj.userData.baseY = model.position.y;
       bodyG.visible = false;
@@ -260,6 +340,50 @@ const walker = {
   target: null, tourIdx: 0, moving: false,
   tour: [[17, 1], [18.5, -5], [12, -8.5], [5.5, -4.5], [5, 2.5], [9.5, 4.5]],
 };
+/* Mixamo clips retargeted onto the anime rig by bone-name map; hips x/z pinned so locomotion stays in place */
+const BONE_MAP = {
+  mixamorigHips: 'spine', mixamorigSpine: 'spine001', mixamorigSpine1: 'spine002', mixamorigSpine2: 'spine003',
+  mixamorigNeck: 'Neck', mixamorigHead: 'Head',
+  mixamorigLeftShoulder: 'shoulderL', mixamorigRightShoulder: 'shoulderR',
+  mixamorigLeftArm: 'upper_armL', mixamorigRightArm: 'upper_armR',
+  mixamorigLeftForeArm: 'forearmL', mixamorigRightForeArm: 'forearmR',
+  mixamorigLeftHand: 'handL', mixamorigRightHand: 'handR',
+  mixamorigLeftUpLeg: 'thighL', mixamorigRightUpLeg: 'thighR',
+  mixamorigLeftLeg: 'shinL', mixamorigRightLeg: 'shinR',
+  mixamorigLeftFoot: 'footL', mixamorigRightFoot: 'footR',
+  mixamorigLeftToeBase: 'toeL', mixamorigRightToeBase: 'toeR',
+};
+function retargetClip(clip, k) {
+  const out = [];
+  clip.tracks.forEach((t) => {
+    const dot = t.name.indexOf('.');
+    const base = dot < 0 ? t.name : t.name.slice(0, dot);
+    const suffix = dot < 0 ? '' : t.name.slice(dot);
+    const mapped = BONE_MAP[base];
+    if (!mapped) return;
+    const nt = t.clone();
+    nt.name = mapped + suffix;
+    if (suffix === '.position') {
+      const v = nt.values;
+      for (let i = 0; i < v.length; i++) v[i] *= k;
+      if (base === 'mixamorigHips') {
+        for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; }
+      }
+    }
+    out.push(nt);
+  });
+  return new THREE.AnimationClip(clip.name, clip.duration, out);
+}
+function fadeTo(action, dur) {
+  if (!animMixer || activeAnim === action) return;
+  action.reset();
+  action.setEffectiveTimeScale(1);
+  action.setEffectiveWeight(1);
+  action.fadeIn(dur);
+  action.play();
+  if (activeAnim) activeAnim.fadeOut(dur);
+  activeAnim = action;
+}
 /* click ripple markers */
 const ripples = [];
 for (let i = 0; i < 3; i++) {
@@ -286,11 +410,13 @@ let panButton = false, followMode = false;
 let theta = CAM_HOME.theta, phi = CAM_HOME.phi, radius = fitRadius(), lastOrbit = -10;
 let gTheta = theta, gPhi = phi, gRadius = radius;
 let gTarget = CAM_TARGET.clone();
+gTarget.x -= 3;   /* frame the city right of the copy so text and towers don't stack */
 let lastTowerClick = { url: '', t: 0 };
 let downPos = null, dragging = false;
 const keys = {};
 addEventListener('keydown', (e) => {
-  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code) && scrollY < innerHeight * 0.7) e.preventDefault();
+  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code) && scrollY < innerHeight * 0.7) e.preventDefault();
+  if (e.code === 'KeyE' && typeof activeDoor !== 'undefined' && activeDoor) { window.open(activeDoor.def.url, '_blank', 'noopener'); }
   if (e.code === 'KeyR') resetView();
   if (e.code === 'KeyF') { followMode = !followMode; syncFollowBtn(); }
   if (e.code === 'Equal') gRadius = clamp(gRadius / 1.2, 14, 60);
@@ -338,8 +464,8 @@ canvas.addEventListener('pointermove', (e) => {
         panBy(e.clientX - downPos.x, e.clientY - downPos.y);
         downPos = { x: e.clientX, y: e.clientY };
       } else {
-        gTheta -= (e.movementX || 0) * 0.005;
-        gPhi = Math.min(1.32, Math.max(0.55, gPhi - (e.movementY || 0) * 0.003));
+        gTheta += dx * 0.005;
+        gPhi = Math.min(1.35, Math.max(0.5, gPhi - dy * 0.003));
         lastOrbit = perfNow();
         downPos = { x: e.clientX, y: e.clientY };
       }
@@ -353,7 +479,7 @@ canvas.addEventListener('pointermove', (e) => {
   towers.forEach(t => {
     const on = !!(hit && hit.object.userData.project === t.def);
     t.edges.material.opacity = on ? 1 : 0.85;
-    t.label.scale.set(on ? 6.4 : 5.4, on ? 1.6 : 1.35, 1);
+    t.label.scale.set(on ? t.label.userData.base.x * 1.18 : t.label.userData.base.x, on ? t.label.userData.base.y * 1.18 : t.label.userData.base.y, 1);
   });
 });
 canvas.addEventListener('pointerup', (e) => {
@@ -407,7 +533,7 @@ function panBy(dx, dy) {
 }
 function resetView() {
   gTheta = CAM_HOME.theta; gPhi = CAM_HOME.phi; gRadius = fitRadius();
-  gTarget.set(CITY.x, 3.2, CITY.z);
+  gTarget.set(CITY.x - 3, 3.2, CITY.z);
   followMode = false;
   syncFollowBtn();
   lastOrbit = perfNow();
@@ -436,12 +562,13 @@ let frames = 0;
 function step(dt, t) {
   const at = reduced ? 0.6 : t;   /* frozen ambience when the user prefers reduced motion */
   let vx = 0, vz = 0;
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const fwd = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  const strafe = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
   if (fwd || strafe) {
-    const fx = Math.sin(walker.angle), fz = Math.cos(walker.angle);
-    vx = fx * fwd + fz * strafe;
-    vz = fz * fwd - fx * strafe;
+    const fx = -Math.sin(theta), fz = -Math.cos(theta);   /* away from camera */
+    const rx = Math.cos(theta), rz = -Math.sin(theta);     /* camera right */
+    vx = fx * fwd + rx * strafe;
+    vz = fz * fwd + rz * strafe;
     walker.target = null;
   } else {
     if (!walker.target && !reduced) {
@@ -485,16 +612,40 @@ function step(dt, t) {
     walker.y += walker.vy * dt;
     if (walker.y <= 0) { walker.y = 0; walker.vy = 0; }
   }
-  const bobY = walker.y + (moving ? Math.abs(Math.sin(walker.phase)) * 0.07 : 0);
+  const hasAnim = !!(animMixer && activeAnim);
+  const bobY = walker.y + (!hasAnim && moving ? Math.abs(Math.sin(walker.phase)) * 0.07 : 0);
   bodyG.position.y = bobY;
   bodyG.rotation.x = moving ? 0.09 : 0;
-  if (modelObj) { modelObj.position.y = modelObj.userData.baseY + bobY; modelObj.rotation.x = moving ? 0.09 : 0; }
+  if (modelObj) { modelObj.position.y = modelObj.userData.baseY + bobY; modelObj.rotation.x = !hasAnim && moving ? 0.09 : 0; }
+  if (animMixer) {
+    const airborne = walker.y > 0 || walker.vy !== 0;
+    if (airborne && jumpAction) fadeTo(jumpAction, 0.08);
+    else if (moving && runAction) fadeTo(runAction, 0.25);
+    else if (idleAction && !reduced) fadeTo(idleAction, 0.3);
+  }
   marker.rotation.y += dt * 2;
   marker.position.y = 2.2 + Math.sin(t * 3) * 0.15;
   towers.forEach(t => {
     t.beacon.material.opacity = 0.55 + 0.4 * Math.sin(at * 2.4 + t.phase);
     if (t.roofSpin && !reduced) t.roofSpin.rotation.z += dt * 0.8;
   });
+  doors.forEach(d => {
+    d.glow.material.opacity = reduced ? 0.3 : 0.28 + 0.14 * Math.sin(at * 3 + d.pos.x);
+  });
+  let near = null, nd = 4.2;
+  doors.forEach(d => {
+    const dist = Math.hypot(char.position.x - d.pos.x, char.position.z - d.pos.z);
+    if (dist < nd) { nd = dist; near = d; }
+  });
+  if (near !== activeDoor) {
+    activeDoor = near;
+    if (near) {
+      doorPrompt.innerHTML = 'Enter <b>' + near.def.name + '</b>? &nbsp;press <b>E</b> or click';
+      doorPrompt.hidden = false;
+    } else {
+      doorPrompt.hidden = true;
+    }
+  }
   ripples.forEach(r => {
     if (!r.mesh.visible) return;
     r.t += dt * 1.8;
@@ -529,6 +680,7 @@ function frame() {
   camera.lookAt(CAM_TARGET);
   canvas.style.opacity = String(1 - scrollF * 0.85);
   step(dt, t);
+  if (animMixer) animMixer.update(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }

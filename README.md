@@ -46,6 +46,7 @@ assets/             portrait, komaverse + flutter-showcase screenshots
   falls back to a cached list if the API is unreachable or rate-limited.
 - The hero needs internet for Google Fonts; everything else
   (including images, video and the vendored Three.js engine) is local.
-- **Hero controls:** drag to orbit/pan · wheel/pinch zoom · click a tower to visit it ·
-  click the ground to send the walker there · `WASD`/arrows to walk · `Space` to jump ·
-  `F` follow-cam · `R` reset view. The walker auto-tours the city when idle.
+- **Hero controls:** drag to orbit/pan · wheel/pinch zoom · click a tower or walk into its
+  glowing door, then `E`/click to enter the repo · click the ground to send the walker there ·
+  `WASD`/arrows to walk · `Space` to jump · `F` follow-cam · `R` reset view.
+  The walker auto-tours the city when idle.
