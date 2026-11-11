@@ -292,7 +292,7 @@ char.scale.set(2.1, 2.1, 2.1);
 scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
-let animMixer = null, idleAction = null, runAction = null, activeAnim = null, animK = 1, animHipsName = 'spine';
+let animMixer = null, idleAction = null, runAction = null, activeAnim = null, bindHipsY = 76, animHipsName = 'spine';
 let dynMap = {};
 const restQ = {};
 let headBone = null, hipsBone = null;
@@ -329,7 +329,7 @@ try {
       const hipsW = new THREE.Vector3();
       if (thighDx && thighDx.parent) thighDx.parent.getWorldPosition(hipsW);
       const bindHips = thighDx && thighDx.parent ? (hipsW.y - model.position.y) / model.scale.x : 76;
-      animK = bindHips / 76;
+      bindHipsY = bindHips;
       animHipsName = picked['spine'] ? picked['spine'].name : 'spine';
       model.traverse((o) => { if (o.isBone && o.name === 'Head') headBone = o; if (o.isBone && o.name === animHipsName) hipsBone = o; });
       animMixer = new THREE.AnimationMixer(model);
@@ -338,7 +338,9 @@ try {
         new THREE.FBXLoader().load(url, (anim) => {
           const clip = anim.animations && anim.animations[0];
           if (!clip) return;
-          const rc = retargetClip(clip, animK, animHipsName);
+          const hp0 = (clip.tracks || []).find((t) => t.name === 'mixamorigHips.position');
+          const clipBaseY = hp0 && hp0.values.length > 1 ? hp0.values[1] : 76;
+          const rc = retargetClip(clip, bindHipsY / clipBaseY, animHipsName);
           if (!/idle/.test(url)) dampArmTracks(rc, 0.3);
           const action = animMixer.clipAction(rc);
           if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
