@@ -2,6 +2,16 @@
 /* global THREE — classic script vendor/three.min.js (works on file:// too) */
 
 const canvas = document.getElementById('scene');
+/* visible error badge: if page JS breaks on a visitor's machine, they see red text instead of silence */
+addEventListener('error', (ev) => {
+  let d = document.getElementById('errBadge');
+  if (!d) {
+    d = document.createElement('div'); d.id = 'errBadge';
+    d.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99;max-width:70vw;background:#3a0d0d;color:#ffd7d7;font:12px monospace;padding:8px 10px;border:1px solid #a33;border-radius:8px;white-space:pre-wrap';
+    document.body.appendChild(d);
+  }
+  d.textContent = 'Page error: ' + String((ev && ev.message) || ev).slice(0, 300);
+});
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches && !location.search.includes('motion=1');
 canvas.dataset.rm = String(reduced);
 let renderer;
@@ -582,6 +592,7 @@ canvas.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); 
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('wheel', (e) => {
   if (!matchMedia('(pointer:fine)').matches) return;
+  if (!e.ctrlKey && !e.metaKey) return;   /* plain wheel scrolls the page; ctrl+wheel zooms */
   e.preventDefault();
   let dy = e.deltaY;
   if (e.deltaMode === 1) dy *= 16;
