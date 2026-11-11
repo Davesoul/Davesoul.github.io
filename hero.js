@@ -294,6 +294,7 @@ scene.add(char);
 let modelObj = null, primitiveMode = true;
 let animMixer = null, idleAction = null, runAction = null, activeAnim = null, animK = 1, animHipsName = 'spine';
 let dynMap = {};
+const restQ = {};
 let headBone = null, hipsBone = null;
 try {
   if (THREE.FBXLoader) {
@@ -322,6 +323,7 @@ try {
       const picked = prepareRig(model);
       dynMap = {};
       Object.keys(BONE_MAP).forEach((m) => { if (picked[BONE_MAP[m]]) dynMap[m] = picked[BONE_MAP[m]].name; });
+      model.traverse((o) => { if (o.isBone && /^Dx_/.test(o.name)) restQ[o.name] = o.quaternion.clone(); });
       const thighDx = picked['thighL'] || picked['thighR'] || null;
       model.updateMatrixWorld(true);
       const hipsW = new THREE.Vector3();
@@ -336,7 +338,9 @@ try {
         new THREE.FBXLoader().load(url, (anim) => {
           const clip = anim.animations && anim.animations[0];
           if (!clip) return;
-          const action = animMixer.clipAction(retargetClip(clip, animK, animHipsName));
+          const rc = retargetClip(clip, animK, animHipsName);
+          if (!/idle/.test(url)) dampArmTracks(rc, 0.3);
+          const action = animMixer.clipAction(rc);
           if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
           if (/idle/.test(url)) idleAction = action;
           else runAction = action;
@@ -364,34 +368,113 @@ const walker = {
 /* pick the true deform bones by skin weight (the file stacks same-named rigs):
    the max-weight bone per anime name is the one that moves the mesh — rename it Dx_* so clips bind it */
 function prepareRig(model) {
-  const wsum = new Map();
   const meshes = [];
   model.traverse((o) => { if (o.isSkinnedMesh && o.skeleton && o.geometry.attributes.skinIndex) meshes.push(o); });
-  meshes.forEach((m) => {
-    const si = m.geometry.attributes.skinIndex;
-    const sw = m.geometry.attributes.skinWeight;
-    const arr = si.array, warr = sw ? sw.array : null;
-    const bones = m.skeleton.bones;
-    for (let i = 0; i < si.count; i++) {
-      for (let j = 0; j < 4; j++) {
-        const b = bones[arr[i * 4 + j]];
-        if (!b) continue;
-        wsum.set(b, (wsum.get(b) || 0) + (warr ? warr[i * 4 + j] : 1));
+  const wIn = (bone, meshRe) => {
+    let s = 0;
+    meshes.forEach((m) => {
+      if (meshRe && !meshRe.test(m.name || '')) return;
+      const si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight;
+      const arr = si.array, warr = sw ? sw.array : null, bones = m.skeleton.bones;
+      for (let i = 0; i < si.count; i++)
+        for (let j = 0; j < 4; j++)
+          if (bones[arr[i * 4 + j]] === bone) s += warr ? warr[i * 4 + j] : 1;
+    });
+    return s;
+  };
+  const bestNamed = (meshRe, nm) => {
+    let best = null, bw = 0;
+    const seen = new Set();
+    meshes.forEach((m) => {
+      if (meshRe && !meshRe.test(m.name || '')) return;
+      (m.skeleton.bones || []).forEach((b) => {
+        if (b.name === nm && !seen.has(b)) { seen.add(b); const w = wIn(b, null); if (w > bw) { bw = w; best = b; } }
+      });
+    });
+    return best;
+  };
+  const LEG = /Legs|Shorts/, HEADM = /Head/, SHOE = /Shoes/;
+  const picked = {};
+  const tl = bestNamed(LEG, 'thighL'), tr = bestNamed(LEG, 'thighR');
+  if (tl) picked['thighL'] = tl;
+  if (tr) picked['thighR'] = tr;
+  const H = tl ? tl.parent : (tr ? tr.parent : null);
+  const chainTo = (root, target) => {
+    const c = []; let p = target, g = 0;
+    while (p && p !== root && g++ < 16) { c.unshift(p); p = p.parent; }
+    return p === root ? c : null;
+  };
+  ['L', 'R'].forEach((side) => {
+    const th = side === 'L' ? tl : tr;
+    const Hr = th ? th.parent : null;
+    const footB = bestNamed(SHOE, 'foot' + side);
+    if (footB && Hr && Hr.isBone) {
+      const c = chainTo(Hr, footB);
+      if (c && c.length >= 2) {
+        picked['foot' + side] = c[c.length - 1];
+        picked['shin' + side] = c[c.length - 2];
+      }
+    } else {
+      ['shin', 'foot'].forEach((pre) => {
+        const b = bestNamed(pre === 'shin' ? LEG : SHOE, pre + side);
+        if (b) picked[pre + side] = b;
+      });
+    }
+    const toeB = bestNamed(SHOE, 'toe' + side);
+    if (toeB) picked['toe' + side] = toeB;
+  });
+  const neck = bestNamed(HEADM, 'Neck'), head = bestNamed(HEADM, 'Head');
+  let linked = false;
+  if (H && H.isBone) {
+    picked['spine'] = H;
+    if (neck) {
+      const chain = [];
+      let p = neck, guard = 0;
+      while (p && p !== H && guard++ < 12) { chain.unshift(p); p = p.parent; }
+      if (p === H && chain.length >= 2) {
+        const links = chain.slice(0, -1);
+        if (links[0]) picked['spine001'] = links[0];
+        if (links[1]) picked['spine002'] = links[1];
+        if (links[2]) picked['spine003'] = links[2];
+        else if (links[1]) picked['spine003'] = links[1];
+        picked['Neck'] = neck;
+        linked = true;
       }
     }
-  });
-  const animeNames = ['spine', 'spine001', 'spine002', 'spine003', 'spine004', 'Neck', 'Head', 'shoulderL', 'shoulderR', 'upper_armL', 'upper_armR', 'forearmL', 'forearmR', 'handL', 'handR', 'thighL', 'thighR', 'shinL', 'shinR', 'footL', 'footR', 'toeL', 'toeR'];
-  const picked = {};
-  animeNames.forEach((nm) => {
-    let best = null, bw = 0;
-    wsum.forEach((w, b) => { if (b.name === nm && w > bw) { bw = w; best = b; } });
-    if (best) {
-      const taken = new Set(Object.values(picked).map((o) => o.name));
-      let target = 'Dx_' + nm, k = 0;
-      while (taken.has(target)) target = 'Dx_' + nm + '_' + (++k);
-      best.name = target;
-      picked[nm] = best;
+  }
+  if (!linked) {
+    ['spine', 'spine001', 'spine002', 'spine003', 'Neck'].forEach((nm) => {
+      if (!picked[nm]) { const b = bestNamed(null, nm); if (b) picked[nm] = b; }
+    });
+  }
+  if (head) picked['Head'] = head;
+  const chest = picked['spine002'] || picked['spine001'] || null;
+  ['L', 'R'].forEach((side) => {
+    const handB = bestNamed(/Hands/, 'hand' + side);
+    let done = false;
+    if (handB && chest) {
+      const c = chainTo(chest, handB);
+      if (c && c.length >= 3) {
+        picked['hand' + side] = c[c.length - 1];
+        picked['forearm' + side] = c[c.length - 2];
+        picked['upper_arm' + side] = c[c.length - 3];
+        if (c.length >= 4) picked['shoulder' + side] = c[c.length - 4];
+        done = true;
+      }
     }
+    if (!done) {
+      ['shoulder', 'upper_arm', 'forearm', 'hand'].forEach((pre) => {
+        const b = bestNamed(null, pre + side);
+        if (b) picked[pre + side] = b;
+      });
+    }
+  });
+  const taken = new Set();
+  Object.keys(picked).forEach((nm) => {
+    let target = 'Dx_' + nm, k = 0;
+    while (taken.has(target)) target = 'Dx_' + nm + '_' + (++k);
+    taken.add(target);
+    picked[nm].name = target;
   });
   return picked;
 }
@@ -428,6 +511,21 @@ const BONE_MAP = {
   mixamorigLeftFoot: 'footL', mixamorigRightFoot: 'footR',
   mixamorigLeftToeBase: 'toeL', mixamorigRightToeBase: 'toeR',
 };
+/* soften arm swing on the run (the model's sleeve/forearm split tears at full Mixamo amplitude) */
+function dampArmTracks(clip, f) {
+  clip.tracks.forEach((t) => {
+    if (!/\.quaternion$/.test(t.name)) return;
+    const base = t.name.slice(0, -11);
+    if (!/^(Dx_shoulder|Dx_upper_arm|Dx_forearm|Dx_hand)/.test(base)) return;
+    const rest = restQ[base];
+    if (!rest) return;
+    const q = new THREE.Quaternion();
+    for (let i = 0; i < t.values.length; i += 4) {
+      q.set(t.values[i], t.values[i + 1], t.values[i + 2], t.values[i + 3]);
+      rest.clone().slerp(q, f).toArray(t.values, i);
+    }
+  });
+}
 function retargetClip(clip, k, hipsName) {
   const out = [];
   clip.tracks.forEach((t) => {
