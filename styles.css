@@ -80,6 +80,8 @@ a{color:inherit}
 .door-prompt[hidden]{display:none}
 .hero-inner{pointer-events:none}
 .hero-inner a{pointer-events:auto}
+.hero-copy{max-width:470px}
+.hero h1{font-size:clamp(40px,4.6vw,62px)}
 html,body{overflow-x:hidden}
 @media(max-width:900px){
   .hero h1{font-size:clamp(1.9rem,10vw,2.6rem)}

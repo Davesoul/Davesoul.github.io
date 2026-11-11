@@ -282,7 +282,8 @@ char.scale.set(2.1, 2.1, 2.1);
 scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
-let animMixer = null, idleAction = null, runAction = null, jumpAction = null, activeAnim = null, animK = 1;
+let animMixer = null, idleAction = null, runAction = null, jumpAction = null, activeAnim = null, animK = 1, animHipsName = 'spine';
+let headBone = null, hipsBone = null;
 try {
   if (THREE.FBXLoader) {
     new THREE.FBXLoader().load('assets/char.fbx', (model) => {
@@ -310,13 +311,15 @@ try {
       model.traverse((o) => { if (o.isBone && (o.name === 'thighL' || o.name === 'thighR') && !thigh) thigh = o; });
       const hipsY = thigh && thigh.parent ? Math.abs(thigh.parent.position.y) : 76;
       animK = hipsY / 76;
+      animHipsName = thigh && thigh.parent ? thigh.parent.name : 'spine';
+      model.traverse((o) => { if (o.isBone && o.name === 'Head') headBone = o; if (o.isBone && o.name === animHipsName) hipsBone = o; });
       animMixer = new THREE.AnimationMixer(model);
       activeAnim = null;
       const loadClip = (url, loop) => {
         new THREE.FBXLoader().load(url, (anim) => {
           const clip = anim.animations && anim.animations[0];
           if (!clip) return;
-          const action = animMixer.clipAction(retargetClip(clip, animK));
+          const action = animMixer.clipAction(retargetClip(clip, animK, animHipsName));
           if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
           if (/idle/.test(url)) idleAction = action;
           else if (/run/.test(url)) runAction = action;
@@ -336,7 +339,7 @@ try {
   }
 } catch (e) { canvas.dataset.char = 'fbx-fallback'; }
 const walker = {
-  angle: 0, phase: 0, y: 0, vy: 0,
+  angle: CAM_HOME.theta, phase: 0, y: 0, vy: 0,
   target: null, tourIdx: 0, moving: false,
   tour: [[17, 1], [18.5, -5], [12, -8.5], [5.5, -4.5], [5, 2.5], [9.5, 4.5]],
 };
@@ -353,13 +356,13 @@ const BONE_MAP = {
   mixamorigLeftFoot: 'footL', mixamorigRightFoot: 'footR',
   mixamorigLeftToeBase: 'toeL', mixamorigRightToeBase: 'toeR',
 };
-function retargetClip(clip, k) {
+function retargetClip(clip, k, hipsName) {
   const out = [];
   clip.tracks.forEach((t) => {
     const dot = t.name.indexOf('.');
     const base = dot < 0 ? t.name : t.name.slice(0, dot);
     const suffix = dot < 0 ? '' : t.name.slice(dot);
-    const mapped = BONE_MAP[base];
+    const mapped = base === 'mixamorigHips' ? hipsName : BONE_MAP[base];
     if (!mapped) return;
     const nt = t.clone();
     nt.name = mapped + suffix;
@@ -402,7 +405,7 @@ function ripple(x, z) {
 /* ---------- input: drag-orbit, click, WASD ---------- */
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
-function fitRadius() { return innerWidth / innerHeight < 0.85 ? 37 : 27; }
+function fitRadius() { return innerWidth / innerHeight < 0.85 ? 37 : 26; }
 const _follow = new THREE.Vector3();
 const pinch = { d0: 0, r0: 27, mx: 0, my: 0 };
 const pointers = new Map();
@@ -410,7 +413,7 @@ let panButton = false, followMode = false;
 let theta = CAM_HOME.theta, phi = CAM_HOME.phi, radius = fitRadius(), lastOrbit = -10;
 let gTheta = theta, gPhi = phi, gRadius = radius;
 let gTarget = CAM_TARGET.clone();
-gTarget.x -= 3;   /* frame the city right of the copy so text and towers don't stack */
+gTarget.x -= 1.5;   /* frame the city right of the copy so text and towers don't stack */
 let lastTowerClick = { url: '', t: 0 };
 let downPos = null, dragging = false;
 const keys = {};
@@ -533,7 +536,7 @@ function panBy(dx, dy) {
 }
 function resetView() {
   gTheta = CAM_HOME.theta; gPhi = CAM_HOME.phi; gRadius = fitRadius();
-  gTarget.set(CITY.x - 3, 3.2, CITY.z);
+  gTarget.set(CITY.x - 1.5, 3.2, CITY.z);
   followMode = false;
   syncFollowBtn();
   lastOrbit = perfNow();
