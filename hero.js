@@ -192,7 +192,7 @@ PROJECTS.forEach((p) => {
   scene.add(pole, bulb, halo);
 });
 
-/* ---------- the walker character ---------- */
+/* ---------- the walker character (real FBX model, primitive robot fallback) ---------- */
 const char = new THREE.Group();
 const C_EMBER = 0xff6b35, C_DARK = 0x232c3d, C_SKIN = 0x1a2230;
 function part(geo, color, x, y, z) {
@@ -220,8 +220,6 @@ const blob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), new THREE.MeshBa
 blob.rotation.x = -Math.PI / 2;
 blob.position.y = 0.05;
 char.add(blob);
-char.position.set(13, 0, -8);
-char.scale.set(2.1, 2.1, 2.1);
 const marker = part(new THREE.OctahedronGeometry(0.2, 0), 0xffd9a0, 0, 2.2, 0);
 char.add(marker);
 const youTag = labelSprite('YOU', '#ffd9a0');
@@ -232,8 +230,10 @@ const charGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color:
 charGlow.scale.set(2.2, 2.2, 1);
 charGlow.position.y = 1.1;
 char.add(charGlow);
+char.position.set(13, 0, -8);
+char.scale.set(2.1, 2.1, 2.1);
 scene.add(char);
-/* real character model (graceful fallback to the primitive robot) */
+/* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
 try {
   if (THREE.FBXLoader) {
@@ -277,8 +277,8 @@ function ripple(x, z) {
 /* ---------- input: drag-orbit, click, WASD ---------- */
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
-let theta = 0.85, phi = 1.02, radius = fitRadius(), lastOrbit = -10;
 function fitRadius() { return innerWidth / innerHeight < 0.85 ? 37 : 27; }
+let theta = 0.85, phi = 1.02, radius = fitRadius(), lastOrbit = -10;
 let downPos = null, dragging = false;
 const keys = {};
 addEventListener('keydown', (e) => {
@@ -361,13 +361,15 @@ function step(dt, t) {
       const wp = walker.tour[walker.tourIdx % walker.tour.length];
       walker.target = { x: wp[0], z: wp[1], tour: true };
     }
-    const dx = walker.target.x - char.position.x, dz = walker.target.z - char.position.z;
-    const d = Math.hypot(dx, dz);
-    if (d < 0.4) {
-      if (walker.target.tour) walker.tourIdx++;
-      walker.target = null;
-    } else {
-      vx = dx / d; vz = dz / d;
+    if (walker.target) {
+      const dx = walker.target.x - char.position.x, dz = walker.target.z - char.position.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 0.4) {
+        if (walker.target.tour) walker.tourIdx++;
+        walker.target = null;
+      } else {
+        vx = dx / d; vz = dz / d;
+      }
     }
   }
   const moving = (vx !== 0 || vz !== 0);
@@ -401,7 +403,7 @@ function step(dt, t) {
   bodyG.rotation.x = moving ? 0.09 : 0;
   if (modelObj) { modelObj.position.y = modelObj.userData.baseY + bobY; modelObj.rotation.x = moving ? 0.09 : 0; }
   marker.rotation.y += dt * 2;
-  marker.position.y = 2.9 + Math.sin(t * 3) * 0.15;
+  marker.position.y = 2.2 + Math.sin(t * 3) * 0.15;
   towers.forEach(t => {
     t.beacon.material.opacity = 0.55 + 0.4 * Math.sin(at * 2.4 + t.phase);
     if (t.roofSpin && !reduced) t.roofSpin.rotation.z += dt * 0.8;
