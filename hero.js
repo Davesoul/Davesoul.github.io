@@ -283,10 +283,12 @@ scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
 let animMixer = null, idleAction = null, runAction = null, jumpAction = null, activeAnim = null, animK = 1, animHipsName = 'spine';
+let dynMap = {};
 let headBone = null, hipsBone = null;
 try {
   if (THREE.FBXLoader) {
     new THREE.FBXLoader().load('assets/char.fbx', (model) => {
+      pruneSkeleton(model);
       const bb = new THREE.Box3().setFromObject(model);
       const sz = bb.getSize(new THREE.Vector3());
       model.scale.setScalar((3.4 / char.scale.x) / Math.max(sz.x, sz.y, sz.z));
@@ -307,11 +309,16 @@ try {
           o.material.needsUpdate = true;
         }
       });
-      let thigh = null;
-      model.traverse((o) => { if (o.isBone && (o.name === 'thighL' || o.name === 'thighR') && !thigh) thigh = o; });
-      const hipsY = thigh && thigh.parent ? Math.abs(thigh.parent.position.y) : 76;
-      animK = hipsY / 76;
-      animHipsName = thigh && thigh.parent ? thigh.parent.name : 'spine';
+      const picked = prepareRig(model);
+      dynMap = {};
+      Object.keys(BONE_MAP).forEach((m) => { if (picked[BONE_MAP[m]]) dynMap[m] = picked[BONE_MAP[m]].name; });
+      const thighDx = picked['thighL'] || picked['thighR'] || null;
+      model.updateMatrixWorld(true);
+      const hipsW = new THREE.Vector3();
+      if (thighDx && thighDx.parent) thighDx.parent.getWorldPosition(hipsW);
+      const bindHips = thighDx && thighDx.parent ? (hipsW.y - model.position.y) / model.scale.x : 76;
+      animK = bindHips / 76;
+      animHipsName = picked['spine'] ? picked['spine'].name : 'spine';
       model.traverse((o) => { if (o.isBone && o.name === 'Head') headBone = o; if (o.isBone && o.name === animHipsName) hipsBone = o; });
       animMixer = new THREE.AnimationMixer(model);
       activeAnim = null;
@@ -344,6 +351,63 @@ const walker = {
   tour: [[17, 1], [18.5, -5], [12, -8.5], [5.5, -4.5], [5, 2.5], [9.5, 4.5]],
 };
 /* Mixamo clips retargeted onto the anime rig by bone-name map; hips x/z pinned so locomotion stays in place */
+/* the file ships a dozen stacked same-named armatures (metarig/spring leftovers):
+   keep only bones that actually deform the mesh (+ their ancestors) so the mixer binds the right ones */
+/* pick the true deform bones by skin weight (the file stacks same-named rigs):
+   the max-weight bone per anime name is the one that moves the mesh — rename it Dx_* so clips bind it */
+function prepareRig(model) {
+  const wsum = new Map();
+  const meshes = [];
+  model.traverse((o) => { if (o.isSkinnedMesh && o.skeleton && o.geometry.attributes.skinIndex) meshes.push(o); });
+  meshes.forEach((m) => {
+    const si = m.geometry.attributes.skinIndex;
+    const sw = m.geometry.attributes.skinWeight;
+    const arr = si.array, warr = sw ? sw.array : null;
+    const bones = m.skeleton.bones;
+    for (let i = 0; i < si.count; i++) {
+      for (let j = 0; j < 4; j++) {
+        const b = bones[arr[i * 4 + j]];
+        if (!b) continue;
+        wsum.set(b, (wsum.get(b) || 0) + (warr ? warr[i * 4 + j] : 1));
+      }
+    }
+  });
+  const animeNames = ['spine', 'spine001', 'spine002', 'spine003', 'spine004', 'Neck', 'Head', 'shoulderL', 'shoulderR', 'upper_armL', 'upper_armR', 'forearmL', 'forearmR', 'handL', 'handR', 'thighL', 'thighR', 'shinL', 'shinR', 'footL', 'footR', 'toeL', 'toeR'];
+  const picked = {};
+  animeNames.forEach((nm) => {
+    let best = null, bw = 0;
+    wsum.forEach((w, b) => { if (b.name === nm && w > bw) { bw = w; best = b; } });
+    if (best) {
+      const taken = new Set(Object.values(picked).map((o) => o.name));
+      let target = 'Dx_' + nm, k = 0;
+      while (taken.has(target)) target = 'Dx_' + nm + '_' + (++k);
+      best.name = target;
+      picked[nm] = best;
+    }
+  });
+  return picked;
+}
+function pruneSkeleton(model) {
+  const keep = new Set();
+  model.traverse((o) => {
+    if (o.isSkinnedMesh && o.skeleton && o.geometry.attributes.skinIndex) {
+      const si = o.geometry.attributes.skinIndex;
+      const arr = si.array;
+      const bones = o.skeleton.bones;
+      for (let i = 0; i < si.count; i++) {
+        for (let j = 0; j < 4; j++) {
+          const b = bones[arr[i * 4 + j]];
+          let p = b;
+          while (p && p !== model) { keep.add(p); p = p.parent; }
+        }
+      }
+    }
+  });
+  if (!keep.size) return;
+  const dead = [];
+  model.traverse((o) => { if (o.isBone && !keep.has(o)) dead.push(o); });
+  dead.forEach((b) => { if (b.parent) b.parent.remove(b); });
+}
 const BONE_MAP = {
   mixamorigHips: 'spine', mixamorigSpine: 'spine001', mixamorigSpine1: 'spine002', mixamorigSpine2: 'spine003',
   mixamorigNeck: 'Neck', mixamorigHead: 'Head',
@@ -362,7 +426,7 @@ function retargetClip(clip, k, hipsName) {
     const dot = t.name.indexOf('.');
     const base = dot < 0 ? t.name : t.name.slice(0, dot);
     const suffix = dot < 0 ? '' : t.name.slice(dot);
-    const mapped = base === 'mixamorigHips' ? hipsName : BONE_MAP[base];
+    const mapped = base === 'mixamorigHips' ? hipsName : dynMap[base];
     if (!mapped) return;
     const nt = t.clone();
     nt.name = mapped + suffix;
