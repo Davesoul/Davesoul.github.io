@@ -282,7 +282,7 @@ char.scale.set(2.1, 2.1, 2.1);
 scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
-let animMixer = null, idleAction = null, runAction = null, jumpAction = null, activeAnim = null, animK = 1, animHipsName = 'spine';
+let animMixer = null, idleAction = null, runAction = null, activeAnim = null, animK = 1, animHipsName = 'spine';
 let dynMap = {};
 let headBone = null, hipsBone = null;
 try {
@@ -329,13 +329,11 @@ try {
           const action = animMixer.clipAction(retargetClip(clip, animK, animHipsName));
           if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
           if (/idle/.test(url)) idleAction = action;
-          else if (/run/.test(url)) runAction = action;
-          else jumpAction = action;
+          else runAction = action;
         }, undefined, () => {});
       };
       loadClip('assets/anim-idle.fbx', true);
       loadClip('assets/anim-run.fbx', true);
-      loadClip('assets/anim-jump.fbx', false);
       modelObj = model;
       modelObj.userData.baseY = model.position.y;
       bodyG.visible = false;
@@ -685,9 +683,7 @@ function step(dt, t) {
   bodyG.rotation.x = moving ? 0.09 : 0;
   if (modelObj) { modelObj.position.y = modelObj.userData.baseY + bobY; modelObj.rotation.x = !hasAnim && moving ? 0.09 : 0; }
   if (animMixer) {
-    const airborne = walker.y > 0 || walker.vy !== 0;
-    if (airborne && jumpAction) fadeTo(jumpAction, 0.08);
-    else if (moving && runAction) fadeTo(runAction, 0.25);
+    if (moving && runAction) fadeTo(runAction, 0.25);
     else if (idleAction && !reduced) fadeTo(idleAction, 0.3);
   }
   marker.rotation.y += dt * 2;
