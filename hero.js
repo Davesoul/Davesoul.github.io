@@ -31,6 +31,7 @@ scene.add(dirLight);
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 400);
 
 const CITY = { x: 11, z: -2 };          // city center (right of the hero text)
+const CAM_HOME = { theta: 0.85, phi: 1.02 };
 const CAM_TARGET = new THREE.Vector3(CITY.x, 3.2, CITY.z);
 
 /* ---------- helpers: canvas textures ---------- */
@@ -278,11 +279,22 @@ function ripple(x, z) {
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 function fitRadius() { return innerWidth / innerHeight < 0.85 ? 37 : 27; }
-let theta = 0.85, phi = 1.02, radius = fitRadius(), lastOrbit = -10;
+const _follow = new THREE.Vector3();
+const pinch = { d0: 0, r0: 27, mx: 0, my: 0 };
+const pointers = new Map();
+let panButton = false, followMode = false;
+let theta = CAM_HOME.theta, phi = CAM_HOME.phi, radius = fitRadius(), lastOrbit = -10;
+let gTheta = theta, gPhi = phi, gRadius = radius;
+let gTarget = CAM_TARGET.clone();
+let lastTowerClick = { url: '', t: 0 };
 let downPos = null, dragging = false;
 const keys = {};
 addEventListener('keydown', (e) => {
   if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code) && scrollY < innerHeight * 0.7) e.preventDefault();
+  if (e.code === 'KeyR') resetView();
+  if (e.code === 'KeyF') { followMode = !followMode; syncFollowBtn(); }
+  if (e.code === 'Equal') gRadius = clamp(gRadius / 1.2, 14, 60);
+  if (e.code === 'Minus') gRadius = clamp(gRadius * 1.2, 14, 60);
   keys[e.code] = true;
 });
 addEventListener('keyup', (e) => { keys[e.code] = false; });
@@ -292,19 +304,45 @@ function setNDC(e) {
   ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
 }
 canvas.addEventListener('pointerdown', (e) => {
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) {
+    const p = [...pointers.values()];
+    pinch.d0 = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    pinch.r0 = gRadius;
+    pinch.mx = (p[0].x + p[1].x) / 2; pinch.my = (p[0].y + p[1].y) / 2;
+    dragging = false; downPos = null;
+    return;
+  }
   downPos = { x: e.clientX, y: e.clientY };
   dragging = false;
+  panButton = e.button === 1 || e.button === 2 || e.shiftKey;
   if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (_) {} }
 });
 canvas.addEventListener('pointermove', (e) => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) {
+    const p = [...pointers.values()];
+    const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    if (pinch.d0 > 0) gRadius = clamp(pinch.r0 * pinch.d0 / Math.max(20, d), 14, 60);
+    const mx = (p[0].x + p[1].x) / 2, my = (p[0].y + p[1].y) / 2;
+    panBy(mx - pinch.mx, my - pinch.my);
+    pinch.mx = mx; pinch.my = my;
+    lastOrbit = perfNow();
+    return;
+  }
   if (downPos) {
     const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
     if (!dragging && Math.hypot(dx, dy) > 6) dragging = true;
     if (dragging) {
-      theta -= (e.movementX || 0) * 0.005;
-      phi = Math.min(1.32, Math.max(0.55, phi - (e.movementY || 0) * 0.003));
-      lastOrbit = perfNow();
-      downPos = { x: e.clientX, y: e.clientY };
+      if (panButton) {
+        panBy(e.clientX - downPos.x, e.clientY - downPos.y);
+        downPos = { x: e.clientX, y: e.clientY };
+      } else {
+        gTheta -= (e.movementX || 0) * 0.005;
+        gPhi = Math.min(1.32, Math.max(0.55, gPhi - (e.movementY || 0) * 0.003));
+        lastOrbit = perfNow();
+        downPos = { x: e.clientX, y: e.clientY };
+      }
       return;
     }
   }
@@ -319,15 +357,25 @@ canvas.addEventListener('pointermove', (e) => {
   });
 });
 canvas.addEventListener('pointerup', (e) => {
+  pointers.delete(e.pointerId);
+  if (pointers.size > 0) return;
   const wasDrag = dragging;
-  downPos = null; dragging = false;
-  if (wasDrag) return;
+  downPos = null; dragging = false; panButton = false;
+  if (wasDrag || e.button !== 0) return;
   setNDC(e);
   ray.setFromCamera(ndc, camera);
   const hitB = ray.intersectObjects(hitMeshes, false)[0];
   if (hitB) {
     lastOrbit = perfNow();
-    window.open(hitB.object.userData.project.url, '_blank', 'noopener');
+    const url = hitB.object.userData.project.url;
+    const t = perfNow();
+    if (lastTowerClick.url === url && t - lastTowerClick.t < 0.55) {
+      lastTowerClick = { url: '', t: 0 };
+      resetView();
+    } else {
+      lastTowerClick = { url, t };
+      window.open(url, '_blank', 'noopener');
+    }
     return;
   }
   const hitG = ray.intersectObject(ground, false)[0];
@@ -338,6 +386,45 @@ canvas.addEventListener('pointerup', (e) => {
     walker.target = { x: CITY.x + dx * cl, z: CITY.z + dz * cl };
     ripple(walker.target.x, walker.target.z);
   }
+});
+canvas.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); downPos = null; dragging = false; panButton = false; });
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+canvas.addEventListener('wheel', (e) => {
+  if (!matchMedia('(pointer:fine)').matches) return;
+  e.preventDefault();
+  let dy = e.deltaY;
+  if (e.deltaMode === 1) dy *= 16;
+  gRadius = clamp(gRadius * (1 + dy * 0.001), 14, 60);
+  lastOrbit = perfNow();
+}, { passive: false });
+function panBy(dx, dy) {
+  const s = radius * 0.0016;
+  const rx = Math.cos(theta), rz = -Math.sin(theta);
+  const ux = -Math.sin(theta), uz = -Math.cos(theta);
+  gTarget.x = clamp(gTarget.x - (dx * rx + dy * ux) * s, CITY.x - 18, CITY.x + 18);
+  gTarget.z = clamp(gTarget.z - (dx * rz + dy * uz) * s, CITY.z - 18, CITY.z + 18);
+  lastOrbit = perfNow();
+}
+function resetView() {
+  gTheta = CAM_HOME.theta; gPhi = CAM_HOME.phi; gRadius = fitRadius();
+  gTarget.set(CITY.x, 3.2, CITY.z);
+  followMode = false;
+  syncFollowBtn();
+  lastOrbit = perfNow();
+}
+function syncFollowBtn() {
+  document.querySelectorAll('[data-cam="follow"]').forEach(b => b.classList.toggle('on', followMode));
+}
+document.querySelectorAll('[data-cam]').forEach(btn => {
+  btn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const a = btn.getAttribute('data-cam');
+    lastOrbit = perfNow();
+    if (a === 'zin') gRadius = clamp(gRadius / 1.25, 14, 60);
+    else if (a === 'zout') gRadius = clamp(gRadius * 1.25, 14, 60);
+    else if (a === 'reset') resetView();
+    else if (a === 'follow') { followMode = !followMode; syncFollowBtn(); }
+  });
 });
 function perfNow() { return performance.now() / 1000; }
 let scrollF = 0;
@@ -424,7 +511,16 @@ function frame() {
   frames++;
   if (frames % 30 === 0) canvas.dataset.frames = String(frames);
   const now = perfNow();
-  if (now - lastOrbit > 8 && !reduced) theta += dt * 0.05;
+  if (now - lastOrbit > 8 && !reduced && !followMode) gTheta += dt * 0.05;
+  const k = Math.min(1, dt * 7);
+  theta += (gTheta - theta) * k;
+  phi += (gPhi - phi) * k;
+  radius += (gRadius - radius) * k;
+  if (followMode) {
+    _follow.set(char.position.x, char.position.y + 3.2, char.position.z);
+    gTarget.lerp(_follow, Math.min(1, dt * 4));
+  }
+  CAM_TARGET.lerp(gTarget, Math.min(1, dt * 8));
   camera.position.set(
     CAM_TARGET.x + radius * Math.sin(phi) * Math.sin(theta),
     CAM_TARGET.y + radius * Math.cos(phi),
@@ -441,5 +537,5 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-  radius = fitRadius();
+  radius = gRadius = fitRadius();
 });

@@ -36,7 +36,7 @@ Alternative: push to any repo (e.g. `portfolio`) and enable
 index.html          content + sections
 styles.css          ember/void design system
 main.js             reveal, typing, tilt, counters, live GitHub grid
-hero.js             2D canvas skyline city (no WebGL/GPU) — clickable towers, walker
+hero.js             Three.js project city — clickable towers, controllable walker
 assets/             portrait, komaverse + flutter-showcase screenshots
 ```
 
@@ -45,7 +45,7 @@ assets/             portrait, komaverse + flutter-showcase screenshots
 - The **GitHub section** fetches `api.github.com/users/Davesoul/repos` live and
   falls back to a cached list if the API is unreachable or rate-limited.
 - The hero needs internet for Google Fonts; everything else
-  (including images and video) is local and GPU-free.
-- **Hero controls:** drag to pan · click a tower to visit it ·
-  click the ground to send the walker there · `A`/`D` or arrows to walk · `Space` to jump.
-  The walker auto-tours the city when idle.
+  (including images, video and the vendored Three.js engine) is local.
+- **Hero controls:** drag to orbit/pan · wheel/pinch zoom · click a tower to visit it ·
+  click the ground to send the walker there · `WASD`/arrows to walk · `Space` to jump ·
+  `F` follow-cam · `R` reset view. The walker auto-tours the city when idle.
