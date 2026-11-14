@@ -292,7 +292,7 @@ char.scale.set(2.1, 2.1, 2.1);
 scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
-let RIG = null, walkBlend = 0;
+let animMixer = null, idleAction = null, runAction = null, activeAnim = null, bindHipsY = 76;
 try {
   if (THREE.FBXLoader) {
     new THREE.FBXLoader().load('assets/char.fbx', (model) => {
@@ -318,7 +318,29 @@ try {
         }
       });
       const picked = prepareRig(model);
-      RIG = picked;
+      const dynMap = {};
+      Object.keys(BONE_MAP).forEach((m) => { if (picked[BONE_MAP[m]]) dynMap[m] = picked[BONE_MAP[m]].name; });
+      const thighDx = picked['thighL'] || picked['thighR'] || null;
+      model.updateMatrixWorld(true);
+      const hipsW = new THREE.Vector3();
+      if (thighDx && thighDx.parent) thighDx.parent.getWorldPosition(hipsW);
+      bindHipsY = thighDx && thighDx.parent ? (hipsW.y - model.position.y) / model.scale.x : 76;
+      animMixer = new THREE.AnimationMixer(model);
+      activeAnim = null;
+      const loadClip = (url, loop) => {
+        new THREE.FBXLoader().load(url, (asset) => {
+          const clip = asset.animations && asset.animations[0];
+          if (!clip) return;
+          asset.updateMatrixWorld(true);
+          const rc = retargetClip(clip, asset, dynMap);
+          const action = animMixer.clipAction(rc);
+          if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
+          if (/idle/.test(url)) idleAction = action;
+          else runAction = action;
+        }, undefined, () => {});
+      };
+      loadClip('assets/anim-idle.fbx', true);
+      loadClip('assets/anim-run.fbx', true);
       modelObj = model;
       modelObj.userData.baseY = model.position.y;
       bodyG.visible = false;
@@ -369,7 +391,15 @@ function prepareRig(model) {
   const tl = bestNamed(LEG, 'thighL'), tr = bestNamed(LEG, 'thighR');
   if (tl) picked['thighL'] = tl;
   if (tr) picked['thighR'] = tr;
-  const H = tl ? tl.parent : (tr ? tr.parent : null);
+  const H = (() => {
+    let h = tl ? tl.parent : (tr ? tr.parent : null);
+    const anc = new Set();
+    let q = bestNamed(HEADM, 'Neck'), g0 = 0;
+    while (q && g0++ < 14) { anc.add(q); q = q.parent; }
+    let p = tl, g1 = 0;
+    while (p && g1++ < 14) { if (anc.has(p)) { h = p; break; } p = p.parent; }
+    return h;
+  })();
   const chainTo = (root, target) => {
     const c = []; let p = target, g = 0;
     while (p && p !== root && g++ < 16) { c.unshift(p); p = p.parent; }
@@ -473,7 +503,66 @@ function pruneSkeleton(model) {
   model.traverse((o) => { if (o.isBone && !keep.has(o)) dead.push(o); });
   dead.forEach((b) => { if (b.parent) b.parent.remove(b); });
 }
-/* purposeful procedural walk/idle driver on the verified Dx_ deform bones (Mixamo retarget removed: hostile rig) */
+/* Mixamo retarget, TECH-style: rebase each key through the source parent's rest
+   world rotation into the target parent's rest frame (raw quaternion copy is
+   what inverted limbs on this foreign rig). Hips travel scaled per-clip. */
+const BONE_MAP = {
+  mixamorigHips: 'spine', mixamorigSpine: 'spine001', mixamorigSpine1: 'spine002', mixamorigSpine2: 'spine003',
+  mixamorigNeck: 'Neck', mixamorigHead: 'Head',
+  mixamorigLeftShoulder: 'shoulderL', mixamorigRightShoulder: 'shoulderR',
+  mixamorigLeftArm: 'upper_armL', mixamorigRightArm: 'upper_armR',
+  mixamorigLeftForeArm: 'forearmL', mixamorigRightForeArm: 'forearmR',
+  mixamorigLeftHand: 'handL', mixamorigRightHand: 'handR',
+  mixamorigLeftUpLeg: 'thighL', mixamorigRightUpLeg: 'thighR',
+  mixamorigLeftLeg: 'shinL', mixamorigRightLeg: 'shinR',
+  mixamorigLeftFoot: 'footL', mixamorigRightFoot: 'footR',
+  mixamorigLeftToeBase: 'toeL', mixamorigRightToeBase: 'toeR',
+};
+function retargetClip(clip, asset, dynMap) {
+  const out = [];
+  const srcHips = asset.getObjectByName('mixamorigHips');
+  const s = srcHips && srcHips.position.y ? (bindHipsY / srcHips.position.y) : 1;
+  const q = new THREE.Quaternion(), pwS = new THREE.Quaternion(), pwD = new THREE.Quaternion();
+  clip.tracks.forEach((t) => {
+    const dot = t.name.indexOf('.');
+    const base = dot < 0 ? t.name : t.name.slice(0, dot);
+    const suffix = dot < 0 ? '' : t.name.slice(dot);
+    if (base === 'mixamorigHips' && suffix === '.position') {
+      const v = t.values.slice();
+      for (let i = 0; i < v.length; i++) v[i] *= s;
+      for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; }
+      if (dynMap['mixamorigHips']) out.push(new THREE.VectorKeyframeTrack(dynMap['mixamorigHips'] + '.position', t.times, v));
+      return;
+    }
+    if (suffix !== '.quaternion') return;
+    const dst = dynMap[base];
+    if (!dst) return;
+    const srcNode = asset.getObjectByName(base);
+    const dstBone = modelObj ? modelObj.getObjectByName(dst) : null;
+    if (!srcNode || !dstBone || !srcNode.parent || !dstBone.parent) return;
+    srcNode.parent.getWorldQuaternion(pwS);
+    dstBone.parent.getWorldQuaternion(pwD);
+    pwD.invert();
+    const vals = t.values.slice();
+    for (let i = 0; i < vals.length; i += 4) {
+      q.set(vals[i], vals[i + 1], vals[i + 2], vals[i + 3]);
+      q.premultiply(pwS).premultiply(pwD);
+      vals[i] = q.x; vals[i + 1] = q.y; vals[i + 2] = q.z; vals[i + 3] = q.w;
+    }
+    out.push(new THREE.QuaternionKeyframeTrack(dst + '.quaternion', t.times, vals));
+  });
+  return new THREE.AnimationClip(clip.name, clip.duration, out);
+}
+function fadeTo(action, dur) {
+  if (!animMixer || activeAnim === action) return;
+  action.reset();
+  action.setEffectiveTimeScale(1);
+  action.setEffectiveWeight(1);
+  action.fadeIn(dur);
+  action.play();
+  if (activeAnim) activeAnim.fadeOut(dur);
+  activeAnim = action;
+}
 /* click ripple markers */
 const ripples = [];
 for (let i = 0; i < 3; i++) {
@@ -698,52 +787,19 @@ function step(dt, t) {
     walker.y += walker.vy * dt;
     if (walker.y <= 0) { walker.y = 0; walker.vy = 0; }
   }
-  walkBlend += ((moving ? 1 : 0) - walkBlend) * Math.min(1, dt * 5);
-  const air = walker.y > 0 || walker.vy !== 0;
-  const sw = Math.sin(walker.phase) * 0.6 * walkBlend;
+  const sw = moving ? Math.sin(walker.phase) * 0.6 : 0;
   if (primitiveMode) {
     legL.rotation.x = sw; legR.rotation.x = -sw;
     armL.rotation.x = -sw * 0.8; armR.rotation.x = sw * 0.8;
   }
-  const idleBob = Math.sin(t * 1.6) * (1 - walkBlend);
-  bodyG.position.y = walker.y + Math.abs(Math.sin(walker.phase)) * 0.07 * walkBlend;
+  const hasAnim = !!(animMixer && activeAnim);
+  const bobY = walker.y + (!hasAnim && moving ? Math.abs(Math.sin(walker.phase)) * 0.07 : 0);
+  bodyG.position.y = bobY;
   bodyG.rotation.x = moving ? 0.09 : 0;
-  if (modelObj && RIG) {
-    const wb = air ? 0 : walkBlend, ib = 1 - wb;
-    const ph = walker.phase;
-    const setX = (b, v) => { if (b) b.rotation.x = v; };
-    if (!air) {
-      const A = 0.55 * wb;
-      setX(RIG.thighL, -A * Math.sin(ph));
-      setX(RIG.thighR, -A * Math.sin(ph + Math.PI));
-      const bL = Math.max(0, Math.sin(ph + 2.4)), bR = Math.max(0, Math.sin(ph + Math.PI + 2.4));
-      setX(RIG.shinL, (0.08 + 1.0 * bL) * wb + 0.06 * ib);
-      setX(RIG.shinR, (0.08 + 1.0 * bR) * wb + 0.06 * ib);
-      const thL = RIG.thighL ? RIG.thighL.rotation.x : 0, shL = RIG.shinL ? RIG.shinL.rotation.x : 0;
-      const thR = RIG.thighR ? RIG.thighR.rotation.x : 0, shR = RIG.shinR ? RIG.shinR.rotation.x : 0;
-      setX(RIG.footL, -(thL + shL) * 0.7);
-      setX(RIG.footR, -(thR + shR) * 0.7);
-      const S = 0.38 * wb;
-      setX(RIG.upper_armL, S * Math.sin(ph) + 0.03 * idleBob);
-      setX(RIG.upper_armR, S * Math.sin(ph + Math.PI) - 0.03 * idleBob);
-      setX(RIG.forearmL, -0.28 * wb - 0.12 + 0.12 * wb * Math.max(0, Math.sin(ph + 0.6)));
-      setX(RIG.forearmR, -0.28 * wb - 0.12 + 0.12 * wb * Math.max(0, Math.sin(ph + Math.PI + 0.6)));
-      if (RIG.spine) { RIG.spine.rotation.z = 0.045 * Math.sin(ph) * wb; RIG.spine.rotation.y = -0.05 * Math.sin(ph) * wb; }
-      if (RIG.Neck) RIG.Neck.rotation.x = 0.03 * Math.sin(ph * 2) * wb;
-      modelObj.rotation.x = 0.07 * wb;
-      modelObj.position.y = modelObj.userData.baseY + walker.y + Math.abs(Math.sin(ph)) * 0.035 * wb + idleBob * 0.006;
-    } else {
-      setX(RIG.thighL, -0.55); setX(RIG.thighR, -0.25);
-      setX(RIG.shinL, 0.95); setX(RIG.shinR, 0.55);
-      setX(RIG.footL, -0.2); setX(RIG.footR, -0.2);
-      setX(RIG.upper_armL, -0.85); setX(RIG.upper_armR, -0.85);
-      setX(RIG.forearmL, -0.35); setX(RIG.forearmR, -0.35);
-      modelObj.rotation.x = 0.04;
-      modelObj.position.y = modelObj.userData.baseY + walker.y;
-    }
-  } else if (modelObj) {
-    modelObj.position.y = modelObj.userData.baseY + walker.y;
-    modelObj.rotation.x = 0;
+  if (modelObj) { modelObj.position.y = modelObj.userData.baseY + bobY; modelObj.rotation.x = !hasAnim && moving ? 0.09 : 0; }
+  if (animMixer) {
+    if (moving && runAction) fadeTo(runAction, 0.25);
+    else if (idleAction && !reduced) fadeTo(idleAction, 0.3);
   }
   marker.rotation.y += dt * 2;
   marker.position.y = 2.2 + Math.sin(t * 3) * 0.15;
@@ -802,6 +858,7 @@ function frame() {
   camera.lookAt(CAM_TARGET);
   canvas.style.opacity = String(1 - scrollF * 0.85);
   step(dt, t);
+  if (animMixer) animMixer.update(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
