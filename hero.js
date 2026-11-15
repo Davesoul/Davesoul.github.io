@@ -927,6 +927,9 @@ function frame() {
       let hip0 = 'n/a';
       if (act && act.tracks) { const t = act.tracks.find((x) => x.name === 'Dx_spine.position'); if (t) hip0 = t.values[0].toFixed(0) + ',' + t.values[1].toFixed(0) + ',' + t.values[2].toFixed(0); }
       extra = '\nDxpar=' + (hb.parent ? hb.parent.name : '?') + ' metarig=' + (meta ? ('W=(' + mw.x.toFixed(1) + ',' + mw.y.toFixed(1) + ',' + mw.z.toFixed(1) + ')') : 'MISSING-from-graph') + ' hipTrack0=(' + hip0 + ')';
+      const hl = hb.position, hs = hb.scale;
+      const ps = hb.parent ? hb.parent.scale : { x: 0, y: 0, z: 0 };
+      extra += '\nHloc=(' + hl.x.toFixed(1) + ',' + hl.y.toFixed(1) + ',' + hl.z.toFixed(1) + ') Hscale=(' + hs.x.toFixed(2) + ',' + hs.y.toFixed(2) + ',' + hs.z.toFixed(2) + ') parScale=(' + ps.x.toFixed(2) + ',' + ps.y.toFixed(2) + ',' + ps.z.toFixed(2) + ') modelScale=' + modelObj.scale.x.toFixed(4) + ' charScale=' + char.scale.x.toFixed(2);
     }
     if (dbgDiv) dbgDiv.textContent = line + extra;
     if (frames % 150 === 0) dbgLog((line + extra).replace(/\n/g, ' '));
