@@ -113,7 +113,7 @@ function labelSprite(text, accent) {
 /* ---------- starfield ---------- */
 (function stars() {
   const n = 700, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
-  const c = new THREE.Color(), palette = ['#7ef0dd', '#8f7bf3', '#edf4f2'];
+  const c = new THREE.Color(), palette = ['#b9a8ff', '#8b7cf6', '#efedf7'];
   for (let i = 0; i < n; i++) {
     pos[i * 3] = (Math.random() - 0.5) * 170;
     pos[i * 3 + 1] = Math.random() * 70 - 8;
@@ -163,11 +163,11 @@ scene.add(plaza);
 
 /* ---------- project towers ---------- */
 const PROJECTS = [
-  { name: 'KOMAVERSE', color: '#2fd4c0', h: 11, x: 17.5, z: -11, url: 'https://youtu.be/npx_7S3tkvU' },
-  { name: 'FLUTTER',   color: '#8f7bf3', h: 9,  x: 21,   z: -3.5, url: 'https://davesoul.github.io/Flutter-showcase/' },
+  { name: 'KOMAVERSE', color: '#8b7cf6', h: 11, x: 17.5, z: -11, url: 'https://youtu.be/npx_7S3tkvU' },
+  { name: 'FLUTTER',   color: '#5b4fd6', h: 9,  x: 21,   z: -3.5, url: 'https://davesoul.github.io/Flutter-showcase/' },
   { name: 'FREE-TTS',  color: '#00c8b4', h: 7,  x: 17.5, z: 4,    url: 'https://github.com/Davesoul/free-tts' },
   { name: 'AI-HUB',    color: '#b48cff', h: 8,  x: 11,   z: 9,    url: 'https://github.com/Davesoul/AI-Corporate-Intelligence-Hub' },
-  { name: 'ORBITA',    color: '#7ef0dd', h: 5,  x: 6,    z: -8,   url: 'https://github.com/Davesoul/Orbita' },
+  { name: 'ORBITA',    color: '#b9a8ff', h: 5,  x: 6,    z: -8,   url: 'https://github.com/Davesoul/Orbita' },
 ];
 const LS = innerWidth / innerHeight < 0.85 ? 0.75 : 1;   /* label/door scale on narrow screens */
 const hitMeshes = [];
@@ -238,7 +238,7 @@ doorPrompt.addEventListener('click', () => {
 (function orbitaRoof() {
   const t = towers.find(t => t.def.name === 'ORBITA');
   if (!t) return;
-  const s = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), new THREE.MeshBasicMaterial({ color: 0x2fd4c0 }));
+  const s = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), new THREE.MeshBasicMaterial({ color: 0x8b7cf6 }));
   s.position.y = t.def.h + 1.1;
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.06, 8, 40), new THREE.MeshBasicMaterial({ color: 0xe5a83b, transparent: true, opacity: 0.8 }));
   ring.position.y = t.def.h + 1.1;
@@ -261,7 +261,7 @@ doorPrompt.addEventListener('click', () => {
 
 /* ---------- the walker character (real FBX model, primitive robot fallback) ---------- */
 const char = new THREE.Group();
-const C_EMBER = 0x2fd4c0, C_DARK = 0x232c3d, C_SKIN = 0x1a2232;
+const C_EMBER = 0x8b7cf6, C_DARK = 0x232c3d, C_SKIN = 0x1a2232;
 function part(geo, color, x, y, z) {
   const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color }));
   m.position.set(x, y, z);
@@ -293,7 +293,7 @@ const youTag = labelSprite('YOU', '#ffd9a0');
 youTag.scale.set(2.6 * LS, 0.65 * LS, 1);
 youTag.position.y = 2.75;
 char.add(youTag);
-const charGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0x2fd4c0, transparent: true, opacity: 0.32, depthWrite: false }));
+const charGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: 0x8b7cf6, transparent: true, opacity: 0.32, depthWrite: false }));
 charGlow.scale.set(2.2, 2.2, 1);
 charGlow.position.y = 1.1;
 char.add(charGlow);
@@ -642,7 +642,7 @@ function fadeTo(action, dur) {
 /* click ripple markers */
 const ripples = [];
 for (let i = 0; i < 3; i++) {
-  const r = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.55, 32), new THREE.MeshBasicMaterial({ color: 0x7ef0dd, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+  const r = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.55, 32), new THREE.MeshBasicMaterial({ color: 0xb9a8ff, transparent: true, opacity: 0, side: THREE.DoubleSide }));
   r.rotation.x = -Math.PI / 2; r.position.y = 0.06; r.visible = false;
   scene.add(r);
   ripples.push({ mesh: r, t: 1 });
