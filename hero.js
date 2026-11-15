@@ -293,6 +293,7 @@ scene.add(char);
 /* swap in the real anime model when it loads; primitive stays as fallback */
 let modelObj = null, primitiveMode = true;
 let animMixer = null, idleAction = null, runAction = null, activeAnim = null, bindHipsY = 76;
+let restQMap = {}, restPMap = {};
 try {
   if (THREE.FBXLoader) {
     new THREE.FBXLoader().load('assets/char.fbx', (model) => {
@@ -320,11 +321,14 @@ try {
       const picked = prepareRig(model);
       const dynMap = {};
       Object.keys(BONE_MAP).forEach((m) => { if (picked[BONE_MAP[m]]) dynMap[m] = picked[BONE_MAP[m]].name; });
+      restQMap = {}; restPMap = {};
+      Object.keys(dynMap).forEach((m) => { const b = model.getObjectByName(dynMap[m]); if (b) { restQMap[dynMap[m]] = b.quaternion.clone(); restPMap[dynMap[m]] = b.position.clone(); } });
       const thighDx = picked['thighL'] || picked['thighR'] || null;
       model.updateMatrixWorld(true);
-      const hipsW = new THREE.Vector3();
-      if (thighDx && thighDx.parent) thighDx.parent.getWorldPosition(hipsW);
-      bindHipsY = thighDx && thighDx.parent ? (hipsW.y - model.position.y) / model.scale.x : 76;
+      const pelvW = new THREE.Vector3();
+      const pelvB = picked['spine'] || (thighDx ? thighDx.parent : null);
+      if (pelvB) pelvB.getWorldPosition(pelvW);
+      bindHipsY = pelvB ? (pelvW.y - model.position.y) / model.scale.x : 76;
       animMixer = new THREE.AnimationMixer(model);
       activeAnim = null;
       const loadClip = (url, loop) => {
@@ -520,33 +524,41 @@ const BONE_MAP = {
 };
 function retargetClip(clip, asset, dynMap) {
   const out = [];
+  const hipsTrack = (clip.tracks || []).find((t) => {
+    const dot = t.name.indexOf('.');
+    return t.name.slice(0, dot) === 'mixamorigHips' && t.name.slice(dot) === '.position';
+  });
+  const trackBaseY = hipsTrack && hipsTrack.values.length > 1 ? hipsTrack.values[1] : 0;
   const srcHips = asset.getObjectByName('mixamorigHips');
-  const s = srcHips && srcHips.position.y ? (bindHipsY / srcHips.position.y) : 1;
-  const q = new THREE.Quaternion(), pwS = new THREE.Quaternion(), pwD = new THREE.Quaternion();
+  const nodeBaseY = srcHips ? srcHips.position.y : 76;
+  const s = bindHipsY / (trackBaseY || nodeBaseY || 76);
+  const q = new THREE.Quaternion(), sq = new THREE.Quaternion(), dl = new THREE.Quaternion();
   clip.tracks.forEach((t) => {
     const dot = t.name.indexOf('.');
     const base = dot < 0 ? t.name : t.name.slice(0, dot);
     const suffix = dot < 0 ? '' : t.name.slice(dot);
     if (base === 'mixamorigHips' && suffix === '.position') {
+      const dst = dynMap['mixamorigHips'];
+      if (!dst || !restPMap[dst]) return;
       const v = t.values.slice();
       for (let i = 0; i < v.length; i++) v[i] *= s;
-      for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; }
-      if (dynMap['mixamorigHips']) out.push(new THREE.VectorKeyframeTrack(dynMap['mixamorigHips'] + '.position', t.times, v));
+      const rp = restPMap[dst];
+      for (let i = 0; i < v.length; i += 3) { v[i] = rp.x; v[i + 2] = rp.z; }
+      out.push(new THREE.VectorKeyframeTrack(dst + '.position', t.times, v));
       return;
     }
     if (suffix !== '.quaternion') return;
     const dst = dynMap[base];
-    if (!dst) return;
+    if (!dst || !restQMap[dst]) return;
     const srcNode = asset.getObjectByName(base);
-    const dstBone = modelObj ? modelObj.getObjectByName(dst) : null;
-    if (!srcNode || !dstBone || !srcNode.parent || !dstBone.parent) return;
-    srcNode.parent.getWorldQuaternion(pwS);
-    dstBone.parent.getWorldQuaternion(pwD);
-    pwD.invert();
+    if (!srcNode) return;
+    sq.copy(srcNode.quaternion);
+    const rq = restQMap[dst];
     const vals = t.values.slice();
     for (let i = 0; i < vals.length; i += 4) {
       q.set(vals[i], vals[i + 1], vals[i + 2], vals[i + 3]);
-      q.premultiply(pwS).premultiply(pwD);
+      dl.copy(sq).invert().multiply(q);
+      q.copy(rq).multiply(dl);
       vals[i] = q.x; vals[i + 1] = q.y; vals[i + 2] = q.z; vals[i + 3] = q.w;
     }
     out.push(new THREE.QuaternionKeyframeTrack(dst + '.quaternion', t.times, vals));
