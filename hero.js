@@ -919,8 +919,17 @@ function frame() {
       '\nchar=(' + char.position.x.toFixed(1) + ',' + char.position.z.toFixed(1) + ')' +
       ' hipsW=(' + hw.x.toFixed(1) + ',' + hw.y.toFixed(1) + ',' + hw.z.toFixed(1) + ')' +
       '\nsepXZ=' + sep.toFixed(1) + ' (body-vs-marker gap; must stay < 1)';
-    if (dbgDiv) dbgDiv.textContent = line;
-    if (frames % 150 === 0) dbgLog(line.replace('\n', ' '));
+    let extra = '';
+    if (hb) {
+      const meta = modelObj.getObjectByName('metarig');
+      const mw = meta ? meta.getWorldPosition(new THREE.Vector3()) : null;
+      const act = activeAnim && activeAnim.getClip ? activeAnim.getClip() : null;
+      let hip0 = 'n/a';
+      if (act && act.tracks) { const t = act.tracks.find((x) => x.name === 'Dx_spine.position'); if (t) hip0 = t.values[0].toFixed(0) + ',' + t.values[1].toFixed(0) + ',' + t.values[2].toFixed(0); }
+      extra = '\nDxpar=' + (hb.parent ? hb.parent.name : '?') + ' metarig=' + (meta ? ('W=(' + mw.x.toFixed(1) + ',' + mw.y.toFixed(1) + ',' + mw.z.toFixed(1) + ')') : 'MISSING-from-graph') + ' hipTrack0=(' + hip0 + ')';
+    }
+    if (dbgDiv) dbgDiv.textContent = line + extra;
+    if (frames % 150 === 0) dbgLog((line + extra).replace(/\n/g, ' '));
   }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
