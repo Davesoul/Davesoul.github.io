@@ -359,6 +359,23 @@ const walker = {
   target: null, tourIdx: 0, moving: false,
   tour: [[17, 1], [18.5, -5], [12, -8.5], [5.5, -4.5], [5, 2.5], [9.5, 4.5]],
 };
+/* solid tower footprints: the walker slides around buildings instead of vanishing inside them */
+const COLLIDERS = PROJECTS.map((p) => ({ x: p.x, z: p.z, r: 3.1 }));
+function collide(px, pz) {
+  let x = px, z = pz;
+  for (let i = 0; i < 2; i++) {
+    for (const c of COLLIDERS) {
+      const dx = x - c.x, dz = z - c.z;
+      const d = Math.hypot(dx, dz);
+      if (d < c.r && d > 1e-4) { x = c.x + (dx / d) * c.r; z = c.z + (dz / d) * c.r; }
+      else if (d <= 1e-4) { x = c.x + c.r; }
+    }
+  }
+  const ox = x - CITY.x, oz = z - CITY.z;
+  const od = Math.hypot(ox, oz);
+  if (od > 20) { x = CITY.x + (ox / od) * 20; z = CITY.z + (oz / od) * 20; }
+  return [x, z];
+}
 /* Mixamo clips retargeted onto the anime rig by bone-name map; hips x/z pinned so locomotion stays in place */
 /* the file ships a dozen stacked same-named armatures (metarig/spring leftovers):
    keep only bones that actually deform the mesh (+ their ancestors) so the mixer binds the right ones */
@@ -784,6 +801,8 @@ function step(dt, t) {
   if (moving) {
     char.position.x += vx * 4.5 * dt;
     char.position.z += vz * 4.5 * dt;
+    const fixed = collide(char.position.x, char.position.z);
+    char.position.x = fixed[0]; char.position.z = fixed[1];
     const want = Math.atan2(vx, vz);
     let diff = want - walker.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
