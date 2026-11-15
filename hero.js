@@ -501,6 +501,14 @@ function prepareRig(model) {
     taken.add(target);
     picked[nm].name = target;
   });
+  /* the file ships duplicate rigs and the loader binds meshes to a stale one,
+     so the mixer drove bones the mesh never followed and the body stayed behind:
+     rebind every skinned mesh to the driven graph bones (same order, authored inverses) */
+  meshes.forEach((m) => {
+    if (!m.skeleton) return;
+    const nb = m.skeleton.bones.map((b) => picked[b.name] || b);
+    if (nb.some((b, i) => b !== m.skeleton.bones[i])) m.skeleton = new THREE.Skeleton(nb, m.skeleton.boneInverses);
+  });
   return picked;
 }
 function pruneSkeleton(model) {
