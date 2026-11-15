@@ -2,6 +2,16 @@
 /* global THREE — classic script vendor/three.min.js (works on file:// too) */
 
 const canvas = document.getElementById('scene');
+/* live debug HUD (?dbg): what the movement code actually does, in your own browser */
+const DBG = location.search.includes('dbg');
+let dbgDiv = null;
+if (DBG) {
+  dbgDiv = document.createElement('div');
+  dbgDiv.id = 'dbgHud';
+  dbgDiv.style.cssText = 'position:fixed;left:12px;top:60px;z-index:99;max-width:78vw;background:#04140c;color:#b8ffd7;font:11px/1.5 monospace;padding:8px 10px;border:1px solid #1d5c38;border-radius:8px;white-space:pre-wrap;pointer-events:none';
+  document.body.appendChild(dbgDiv);
+}
+function dbgLog(...a) { if (DBG) console.log('[walk]', ...a); }
 /* visible error badge: if page JS breaks on a visitor's machine, they see red text instead of silence */
 addEventListener('error', (ev) => {
   let d = document.getElementById('errBadge');
@@ -592,6 +602,7 @@ function retargetClip(clip, asset, dynMap) {
 }
 function fadeTo(action, dur) {
   if (!animMixer || activeAnim === action) return;
+  dbgLog('fade', (activeAnim && activeAnim.getClip ? activeAnim.getClip().name : 'none'), '->', action.getClip().name);
   action.reset();
   action.setEffectiveTimeScale(1);
   action.setEffectiveWeight(1);
@@ -899,6 +910,18 @@ function frame() {
   canvas.style.opacity = String(1 - scrollF * 0.85);
   step(dt, t);
   if (animMixer) animMixer.update(dt);
+  if (DBG && modelObj && frames % 15 === 0) {
+    const hb = modelObj.getObjectByName('Dx_spine');
+    const hw = hb ? hb.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3();
+    const sep = Math.hypot(hw.x - char.position.x, hw.z - char.position.z);
+    const line = 'f=' + frames + ' act=' + (activeAnim && activeAnim.getClip ? activeAnim.getClip().name : 'none') +
+      ' moving=' + (walker.moving ? 1 : 0) +
+      '\nchar=(' + char.position.x.toFixed(1) + ',' + char.position.z.toFixed(1) + ')' +
+      ' hipsW=(' + hw.x.toFixed(1) + ',' + hw.y.toFixed(1) + ',' + hw.z.toFixed(1) + ')' +
+      '\nsepXZ=' + sep.toFixed(1) + ' (body-vs-marker gap; must stay < 1)';
+    if (dbgDiv) dbgDiv.textContent = line;
+    if (frames % 150 === 0) dbgLog(line.replace('\n', ' '));
+  }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
