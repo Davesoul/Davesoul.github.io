@@ -511,24 +511,12 @@ function prepareRig(model) {
     taken.add(target);
     picked[nm].name = target;
   });
-  /* the file ships stacked duplicate rigs plus a junk 100x file-root scale: the loader
-     binds meshes to a stale duplicate rig (body stays at spawn) while the mixer drives
-     graph bones under the 100x root (bones orbit ~111 units out on play). Fix both:
-     neutralize junk ancestor scales, rebind every mesh to live graph bones (same slot
-     order), rebuild inverses from the fixed bind. */
+  /* the file ships stacked duplicate rigs plus a 100x file-root scale over tiny bind
+     locals: the mesh was bound to a stale duplicate rig (body stayed at spawn) while the
+     mixer drove graph bones. Rebind every slot to live graph bones (driven ones to the
+     animation, the rest to their static graph originals). The root scale is load-bearing
+     for bind height, so it stays; the animation track scale is divided by it instead. */
   let rigG = 0, rigJ = 0, rigX = 0;
-  const descaled = [];
-  if (picked['spine']) {
-    let p = picked['spine'].parent;
-    while (p && p !== model) {
-      ['x', 'y', 'z'].forEach((ax) => {
-        const s = p.scale[ax];
-        if (s > 2 || s < 0.5) { descaled.push(p.name + '.' + ax + '=' + s.toFixed(1)); p.scale[ax] = 1; }
-      });
-      p = p.parent;
-    }
-  }
-  scene.updateMatrixWorld(true);
   meshes.forEach((m) => {
     if (!m.skeleton) return;
     const old = m.skeleton;
@@ -539,12 +527,12 @@ function prepareRig(model) {
       rigX++; return b;
     });
     if (nb.some((b, i) => b !== old.bones[i])) {
-      m.skeleton = new THREE.Skeleton(nb);
+      m.skeleton = new THREE.Skeleton(nb, old.boneInverses);
       if (old.dispose) old.dispose();
     }
   });
-  window.__rigReport = { driven: rigG, staticGraph: rigJ, detachedUnknown: rigX, descaled };
-  dbgLog('rig', 'driven=' + rigG, 'staticGraph=' + rigJ, 'detachedUnknown=' + rigX, 'descaled=[' + descaled.join(',') + ']');
+  window.__rigReport = { driven: rigG, staticGraph: rigJ, detachedUnknown: rigX };
+  dbgLog('rig', 'driven=' + rigG, 'staticGraph=' + rigJ, 'detachedUnknown=' + rigX);
   return picked;
 }
 function pruneSkeleton(model) {
@@ -593,6 +581,13 @@ function retargetClip(clip, asset, dynMap) {
   const srcHips = asset.getObjectByName('mixamorigHips');
   const nodeBaseY = srcHips ? srcHips.position.y : 76;
   const s = bindHipsY / (trackBaseY || nodeBaseY || 76);
+  /* the pelvis hangs under ancestors whose scale (100x file root over tiny bind locals)
+     is load-bearing for bind height: divide the Mixamo-scale track values by that
+     ancestor scale product so the written offsets land body-sized instead of 100x out */
+  let asc = 1, ap = model.getObjectByName(dst);
+  ap = ap ? ap.parent : null;
+  while (ap && ap !== model) { asc *= ap.scale.y || 1; ap = ap.parent; }
+  const hs = s / (asc || 1);
   const q = new THREE.Quaternion(), sq = new THREE.Quaternion(), dl = new THREE.Quaternion();
   clip.tracks.forEach((t) => {
     const dot = t.name.indexOf('.');
@@ -602,7 +597,7 @@ function retargetClip(clip, asset, dynMap) {
       const dst = dynMap['mixamorigHips'];
       if (!dst || !restPMap[dst]) return;
       const v = t.values.slice();
-      for (let i = 0; i < v.length; i++) v[i] *= s;
+      for (let i = 0; i < v.length; i++) v[i] *= hs;
       const rp = restPMap[dst];
       for (let i = 0; i < v.length; i += 3) { v[i] = rp.x; v[i + 2] = rp.z; }
       out.push(new THREE.VectorKeyframeTrack(dst + '.position', t.times, v));
@@ -957,7 +952,7 @@ function frame() {
       const ps = hb.parent ? hb.parent.scale : { x: 0, y: 0, z: 0 };
       extra += '\nHloc=(' + hl.x.toFixed(1) + ',' + hl.y.toFixed(1) + ',' + hl.z.toFixed(1) + ') Hscale=(' + hs.x.toFixed(2) + ',' + hs.y.toFixed(2) + ',' + hs.z.toFixed(2) + ') parScale=(' + ps.x.toFixed(2) + ',' + ps.y.toFixed(2) + ',' + ps.z.toFixed(2) + ') modelScale=' + modelObj.scale.x.toFixed(4) + ' charScale=' + char.scale.x.toFixed(2);
       const rr = window.__rigReport;
-      if (rr) extra += '\nrig=driven:' + rr.driven + ' staticGraph:' + rr.staticGraph + ' detachedUnknown:' + rr.detachedUnknown + ' descaled:[' + rr.descaled.join(',') + ']';
+      if (rr) extra += '\nrig=driven:' + rr.driven + ' staticGraph:' + rr.staticGraph + ' detachedUnknown:' + rr.detachedUnknown;
     }
     if (dbgDiv) dbgDiv.textContent = line + extra;
     if (frames % 150 === 0) dbgLog((line + extra).replace(/\n/g, ' '));
