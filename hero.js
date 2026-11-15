@@ -342,16 +342,20 @@ try {
       animMixer = new THREE.AnimationMixer(model);
       activeAnim = null;
       const loadClip = (url, loop) => {
+        const tag = /idle/.test(url) ? 'idle' : 'run';
+        window.__clipState = window.__clipState || {};
+        window.__clipState[tag] = 'loading';
         new THREE.FBXLoader().load(url, (asset) => {
           const clip = asset.animations && asset.animations[0];
-          if (!clip) return;
+          if (!clip) { window.__clipState[tag] = 'empty'; dbgLog('clip EMPTY (no animation track)', url); return; }
+          window.__clipState[tag] = 'ok';
           asset.updateMatrixWorld(true);
           const rc = retargetClip(clip, asset, dynMap);
           const action = animMixer.clipAction(rc);
           if (!loop) { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
           if (/idle/.test(url)) idleAction = action;
           else runAction = action;
-        }, undefined, () => {});
+        }, undefined, () => { window.__clipState[tag] = 'fetch-failed'; dbgLog('clip FETCH FAILED', url); });
       };
       loadClip('assets/anim-idle.fbx', true);
       loadClip('assets/anim-run.fbx', true);
@@ -953,6 +957,8 @@ function frame() {
       extra += '\nHloc=(' + hl.x.toFixed(1) + ',' + hl.y.toFixed(1) + ',' + hl.z.toFixed(1) + ') Hscale=(' + hs.x.toFixed(2) + ',' + hs.y.toFixed(2) + ',' + hs.z.toFixed(2) + ') parScale=(' + ps.x.toFixed(2) + ',' + ps.y.toFixed(2) + ',' + ps.z.toFixed(2) + ') modelScale=' + modelObj.scale.x.toFixed(4) + ' charScale=' + char.scale.x.toFixed(2);
       const rr = window.__rigReport;
       if (rr) extra += '\nrig=driven:' + rr.driven + ' staticGraph:' + rr.staticGraph + ' detachedUnknown:' + rr.detachedUnknown;
+      const cs = window.__clipState;
+      if (cs) extra += ' clips=idle:' + (cs.idle || '?') + '/run:' + (cs.run || '?');
     }
     if (dbgDiv) dbgDiv.textContent = line + extra;
     if (frames % 150 === 0) dbgLog((line + extra).replace(/\n/g, ' '));
