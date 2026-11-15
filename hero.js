@@ -511,14 +511,40 @@ function prepareRig(model) {
     taken.add(target);
     picked[nm].name = target;
   });
-  /* the file ships duplicate rigs and the loader binds meshes to a stale one,
-     so the mixer drove bones the mesh never followed and the body stayed behind:
-     rebind every skinned mesh to the driven graph bones (same order, authored inverses) */
+  /* the file ships stacked duplicate rigs plus a junk 100x file-root scale: the loader
+     binds meshes to a stale duplicate rig (body stays at spawn) while the mixer drives
+     graph bones under the 100x root (bones orbit ~111 units out on play). Fix both:
+     neutralize junk ancestor scales, rebind every mesh to live graph bones (same slot
+     order), rebuild inverses from the fixed bind. */
+  let rigG = 0, rigJ = 0, rigX = 0;
+  const descaled = [];
+  if (picked['spine']) {
+    let p = picked['spine'].parent;
+    while (p && p !== model) {
+      ['x', 'y', 'z'].forEach((ax) => {
+        const s = p.scale[ax];
+        if (s > 2 || s < 0.5) { descaled.push(p.name + '.' + ax + '=' + s.toFixed(1)); p.scale[ax] = 1; }
+      });
+      p = p.parent;
+    }
+  }
+  scene.updateMatrixWorld(true);
   meshes.forEach((m) => {
     if (!m.skeleton) return;
-    const nb = m.skeleton.bones.map((b) => picked[b.name] || b);
-    if (nb.some((b, i) => b !== m.skeleton.bones[i])) m.skeleton = new THREE.Skeleton(nb, m.skeleton.boneInverses);
+    const old = m.skeleton;
+    const nb = old.bones.map((b) => {
+      if (picked[b.name]) { rigG++; return picked[b.name]; }
+      const g = model.getObjectByName(b.name);
+      if (g && g.isBone === true) { rigJ++; return g; }
+      rigX++; return b;
+    });
+    if (nb.some((b, i) => b !== old.bones[i])) {
+      m.skeleton = new THREE.Skeleton(nb);
+      if (old.dispose) old.dispose();
+    }
   });
+  window.__rigReport = { driven: rigG, staticGraph: rigJ, detachedUnknown: rigX, descaled };
+  dbgLog('rig', 'driven=' + rigG, 'staticGraph=' + rigJ, 'detachedUnknown=' + rigX, 'descaled=[' + descaled.join(',') + ']');
   return picked;
 }
 function pruneSkeleton(model) {
@@ -930,6 +956,8 @@ function frame() {
       const hl = hb.position, hs = hb.scale;
       const ps = hb.parent ? hb.parent.scale : { x: 0, y: 0, z: 0 };
       extra += '\nHloc=(' + hl.x.toFixed(1) + ',' + hl.y.toFixed(1) + ',' + hl.z.toFixed(1) + ') Hscale=(' + hs.x.toFixed(2) + ',' + hs.y.toFixed(2) + ',' + hs.z.toFixed(2) + ') parScale=(' + ps.x.toFixed(2) + ',' + ps.y.toFixed(2) + ',' + ps.z.toFixed(2) + ') modelScale=' + modelObj.scale.x.toFixed(4) + ' charScale=' + char.scale.x.toFixed(2);
+      const rr = window.__rigReport;
+      if (rr) extra += '\nrig=driven:' + rr.driven + ' staticGraph:' + rr.staticGraph + ' detachedUnknown:' + rr.detachedUnknown + ' descaled:[' + rr.descaled.join(',') + ']';
     }
     if (dbgDiv) dbgDiv.textContent = line + extra;
     if (frames % 150 === 0) dbgLog((line + extra).replace(/\n/g, ' '));
