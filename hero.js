@@ -597,7 +597,7 @@ function fitRadius() { return innerWidth / innerHeight < 0.85 ? 37 : 26; }
 const _follow = new THREE.Vector3();
 const pinch = { d0: 0, r0: 27, mx: 0, my: 0 };
 const pointers = new Map();
-let panButton = false, followMode = false;
+let panButton = false, followMode = true;
 let theta = CAM_HOME.theta, phi = CAM_HOME.phi, radius = fitRadius(), lastOrbit = -10;
 let gTheta = theta, gPhi = phi, gRadius = radius;
 let gTarget = CAM_TARGET.clone();
@@ -743,6 +743,7 @@ document.querySelectorAll('[data-cam]').forEach(btn => {
     else if (a === 'reset') resetView();
     else if (a === 'follow') { followMode = !followMode; syncFollowBtn(); }
   });
+  syncFollowBtn();
 });
 function perfNow() { return performance.now() / 1000; }
 let scrollF = 0;
